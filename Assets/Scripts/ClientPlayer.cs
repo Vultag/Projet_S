@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -17,6 +18,8 @@ public class ClientPlayer : MonoBehaviour
         playerNet = GetComponent<PlayerNet>();
 
         playerNet.statePayloadRBuffer = new RingBuffer<StatePayload>(PlayerNet.PayloadRBufferSize);
+        playerNet.inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
+
     }
     void Update()
     {
@@ -27,32 +30,9 @@ public class ClientPlayer : MonoBehaviour
         /// NEEDS TO HAPPEN SYNCED WITH ALL IN  SYSTEM
         ///playerNet.Reconciliation(tick);
 
-        var latestInputs = playerNet.latestServerInputPayload;
+        playerNet.inputPayloadRBuffer.Write(playerNet.latestServerInputPayload);
 
-        playerNet.revertCooldown = (byte)(playerNet.revertCooldown - playerNet.activeRevertCooldown);
-        playerNet.ticksTillPistonPushActivation = (byte)(playerNet.ticksTillPistonPushActivation - latestInputs.pistonPushArmed);
-
-        if (playerNet.revertCooldown == 0)
-        {
-            //Debug.Log("pull");
-            playerNet.PistonPull();
-            playerNet.pistonPushOrPull = false;
-        }
-
-        if (playerNet.ticksTillPistonPushActivation == 0)
-        {
-            //Debug.Log("jump frame = "+tick);
-            //Debug.Log("push");
-            playerNet.Bump(new Vector2(0.71f, 0.71f) * 2000);
-            playerNet.PistonPush(latestInputs.pistonDirection);
-            playerNet.ticksTillPistonPushActivation = 50;
-            playerNet.pistonPushOrPull = true;
-        }
-
-        PlayerBody.AddTorque((3000 * -latestInputs.direction) - (PlayerBody.angularVelocity * 2f * Mathf.Abs(latestInputs.direction)), ForceMode2D.Force);
-
-        /// steped by owner player. must execute before.
-        ///Physics2D.Simulate(PlayerNet.gameFixedDeltaTime);
+        playerNet.Tick(0);
 
         playerNet.statePayloadRBuffer.Write(new StatePayload
         {
@@ -82,6 +62,7 @@ public class ClientPlayer : MonoBehaviour
             activeRevertCooldown = playerNet.activeRevertCooldown,
             revertCooldown = playerNet.revertCooldown,
             pistonPushOrPull = playerNet.pistonPushOrPull,
+            pistonPushArmed = playerNet.pistonPushArmed==0 ? false : true,
             pistonAngle = Pistonjoint.angle
         });
 

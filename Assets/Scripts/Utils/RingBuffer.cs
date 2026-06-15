@@ -15,10 +15,14 @@ public class RingBuffer<T>
     }
     public void Write(T item)
     {
-        buffer[((++head)%bufferSize)] = item;
+        head = (short)((head + 1) % bufferSize);
+        buffer[head] = item;
     }
     public T Read(short idxFromHead)
     {
+        if ((((head + idxFromHead) & (PlayerNet.PayloadRBufferSize - 1)) < 0 | ((head + idxFromHead) & (PlayerNet.PayloadRBufferSize - 1)) > bufferSize))
+            Debug.Log(((head + idxFromHead) & (PlayerNet.PayloadRBufferSize - 1)));
+
         return buffer[((head + idxFromHead) & (PlayerNet.PayloadRBufferSize - 1))];
         //return buffer[(bufferSize + ((head + idxFromHead)% bufferSize)) % bufferSize];
     }

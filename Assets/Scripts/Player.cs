@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
 using Unity.Collections;
@@ -11,11 +12,10 @@ public class Player : MonoBehaviour
     [HideInInspector]
     public UI ui;
     private PowerupManager powerupManager;
+    private ServerManagerNet serverManagerNet;
 
     private PlayerNet playerNet;
     private uint tick;
-
-    public SpriteRenderer playerIcon;
 
     public SliderJoint2D Pistonjoint;
     public Rigidbody2D PlayerBody;
@@ -29,17 +29,8 @@ public class Player : MonoBehaviour
     private InputAction finger2Delta;
     private InputAction finger2Press;
 
-    private float mouvementDirection;
-    //[HideInInspector]
-    //public float rightPressed;
-    //[HideInInspector]
-    //public float leftPressed;
     [HideInInspector]
     public sbyte activeDirection;
-
-
-    //public TextMeshProUGUI tempText1;
-    //public TextMeshProUGUI tempText2;
 
     [HideInInspector]
     public Vector2 respawnPoint;
@@ -48,10 +39,8 @@ public class Player : MonoBehaviour
 
     [SerializeField]
     private GameObject leftjoystickParent;
-    private RectTransform leftjoystickRect;
     [SerializeField]
     private GameObject rightjoystickParent;
-    private RectTransform rightjoystickRect;
 
     private Vector2 finger1HeldDelta;
     private Vector2 finger2HeldDelta;
@@ -62,119 +51,60 @@ public class Player : MonoBehaviour
     private Vector2 rightJumpForceArmed;
     private Vector2 leftJumpForceArmed;
 
-    //private float jumpCooldown = 1f;
-    //private byte activeJumpCooldown = 0;
-    //private bool canJump = true;
-
     private InputPayload activeInputPayload;
 
-    private void OnEnable()
+    public void syncTick(uint atTick)
     {
-        
+        tick = atTick;
     }
 
-    private void OnDisable()
-    {
-
-    }
-
-    private void Awake()
-    {
-
-
-    }
     private void Start()
     {
         //Debug.Log($"Spawned | IsOwner={IsOwner} | OwnerClientId={OwnerClientId} | LocalClientId={NetworkManager.Singleton.LocalClientId}");
 
         playerNet = GetComponent<PlayerNet>();
+        //Debug.Log(playerNet.NetworkObjectId);
 
         playerNet.statePayloadRBuffer = new RingBuffer<StatePayload>(PlayerNet.PayloadRBufferSize);
+        playerNet.inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
 
-
-        //if (IsOwnedByServer) playerIcon.color = Color.red;
-
-        //if (!IsOwner)
-        //{
-        //    this.enabled = false;
-        //    return;
-        //}
+        var propellerS = propeller.GetComponent<Propeller>();
+        var graplingS = graplingHook.GetComponent<Grapling>();
+        /// remplace by active powerup from manager network var
+        propellerS.enabled = true;
+        graplingS.enabled = true;
 
         var ui = FindFirstObjectByType<UI>(FindObjectsInactive.Include);
         powerupManager = ui.GetComponent<PowerupManager>();
         ui.player = this;
         ui.playerNet = GetComponent<PlayerNet>();
 
-        Camera.main.GetComponent<TrackPlayer>().PlayerGB = PlayerBody.gameObject;
+        Camera.main.GetComponent<TrackPlayer>().PlayerGB = playerNet.PlayerBody.gameObject;
         Camera.main.GetComponent<TrackPlayer>().enabled = true;
-        //PullM = new JointMotor2D { motorSpeed = -10, maxMotorTorque = Pistonjoint.motor.maxMotorTorque };
-
-        //if (IsServer) playerIcon.color = Color.red;
 
         ui.gameObject.SetActive(true);
         var gameManager = FindFirstObjectByType<GameManager>(FindObjectsInactive.Include);
         gameManager.gameObject.SetActive(true);
 
-        activeInputPayload = InputPayload.Default();
-    }
+        serverManagerNet = FindFirstObjectByType<ServerManagerNet>(FindObjectsInactive.Include).GetComponent<ServerManagerNet>();
 
-    private void Update()
-    {
-        //leftJumpForceArmed = Mathf.Min(leftjoystickDisplace.magnitude, 100) * leftjoystickDisplace.normalized;
-        //rightJumpForceArmed = Mathf.Min(rightjoystickDisplace.magnitude, 100) * rightjoystickDisplace.normalized;
-        //leftjoystickRect.anchoredPosition = leftJumpForceArmed;
-        //rightjoystickRect.anchoredPosition = rightJumpForceArmed;
-
-        //tempText1.text = (Mathf.Atan2(rightJumpForceArmed.x, rightJumpForceArmed.y) * Mathf.Rad2Deg).ToString();
-
-
+        activeInputPayload = InputPayload.Default(0);
 
     }
 
     private void FixedUpdate()
     {
-        /// NEEDS TO HAPPEN SYNCED WITH ALL IN  SYSTEM
-        ///playerNet.Reconciliation(tick);
+        serverManagerNet.Reconciliation(tick);
 
         activeInputPayload.tick = tick;
         activeInputPayload.direction = activeDirection;
 
         playerNet.ProcessInputPayload(activeInputPayload);
 
-
-        playerNet.revertCooldown = (byte)(playerNet.revertCooldown - playerNet.activeRevertCooldown);
-        playerNet.ticksTillPistonPushActivation = (byte)(playerNet.ticksTillPistonPushActivation - activeInputPayload.pistonPushArmed);
+        activeInputPayload.pistonPush = false;
 
 
-        //if (playerNet.ticksTillPistonPushActivation < 50) Debug.Log("ticking = " + playerNet.ticksTillPistonPushActivation);
-
-        //if (activeInputPayload.pistonPushArmed==1) Debug.Log("ticking active = " + activeInputPayload.pistonPushArmed + " at tick : " + tick);
-
-
-        //var stateActiveRevertCooldown = playerNet.activeRevertCooldown;
-        //var stateRevertCooldown = playerNet.revertCooldown;
-        //var pistonPullOrPush = activeInputPayload.pistonPushArmed == 1 ? false : true;
-
-        if (playerNet.revertCooldown == 0)
-        {
-            //Debug.Log("pull");
-            playerNet.PistonPull();
-            playerNet.pistonPushOrPull = false;
-        }
-
-        if (playerNet.ticksTillPistonPushActivation == 0)
-        {
-            //Debug.Log("jump frame = "+tick);
-            //Debug.Log("push");
-            playerNet.Bump(new Vector2(0.71f, 0.71f) * 2000);
-            playerNet.PistonPush(activeInputPayload.pistonDirection);
-            activeInputPayload.pistonPushArmed = 0;
-            playerNet.ticksTillPistonPushActivation = 50;
-            playerNet.pistonPushOrPull = true;
-        }
-
-        //RotateForceServerRpc((3000 * -activeDirection)- (PlayerBody.angularVelocity*2f*Mathf.Abs(activeDirection)));
-        PlayerBody.AddTorque((3000 * -activeDirection) - (PlayerBody.angularVelocity * 2f * Mathf.Abs(activeDirection)), ForceMode2D.Force);
+        playerNet.Tick(0);
 
         Physics2D.Simulate(PlayerNet.gameFixedDeltaTime);
 
@@ -207,6 +137,7 @@ public class Player : MonoBehaviour
             activeRevertCooldown = playerNet.activeRevertCooldown,
             revertCooldown = playerNet.revertCooldown,
             pistonPushOrPull = playerNet.pistonPushOrPull,
+            pistonPushArmed = playerNet.pistonPushArmed == 0 ? false : true,
             pistonAngle = Pistonjoint.angle
         });
   
@@ -215,73 +146,9 @@ public class Player : MonoBehaviour
 
     public void ArmJumping(Vector2 dir)
     {
-        activeInputPayload.pistonPushArmed = 1;
+        activeInputPayload.pistonPush = true;
         activeInputPayload.pistonDirection = dir;
-        //activeInputPayload.ticksTillPistonPushActivation = 50;
     }
-    //public void tryJumping(Vector2 dir)
-    //{
-    //    //if(canJump)
-    //    {
-    //        PistonPushServerRpc(dir);
-    //        activeInputPayload.pistonPushArmed = 1;
-    //        activeInputPayload.ticksTillPistonPushActivation = 50;
-    //       // activeRevertCooldown = 1;
-    //    }
-    //}
-
-
-    //public void LeftDirPressed()
-    //{
-    //    leftPressed = -1;
-    //}
-    //public void LeftDirReleased()
-    //{
-    //    leftPressed = 0;
-    //}
-    //public void RightDirPressed()
-    //{
-    //    rightPressed = 1;
-    //}
-    //public void RightDirReleased()
-    //{
-    //    rightPressed = 0;
-    //}
-
-    //public void LeftJoySPressed()
-    //{
-    //    LeftJoySFingerIdx = (byte)(finger1Press.ReadValue<float>() + finger2Press.ReadValue<float>());
-    //}
-    //public void LeftJoySReleased()
-    //{
-    //    LeftJoySFingerIdx = 0;
-    //    //this.GetComponent<Rigidbody2D>().AddForce(leftJumpForceArmed * new Vector2(-1, -1) * 800);
-    //    //Pistonjoint.motor =  new JointMotor2D { motorSpeed = -10, maxMotorTorque = Pistonjoint.motor.maxMotorTorque};
-    //}
-    //public void RightJoySPressed()
-    //{
-    //    RightJoySFingerIdx = (byte)(finger1Press.ReadValue<float>() + finger2Press.ReadValue<float>());
-    //}
-    //public void RightJoySReleased()
-    //{
-    //    RightJoySFingerIdx = 0;
-    //    //this.GetComponent<Rigidbody2D>().AddForce(rightJumpForceArmed*new Vector2(-1,-1)*800);
-    //    Pistonjoint.angle = -Mathf.Atan2(rightJumpForceArmed.x, rightJumpForceArmed.y) * Mathf.Rad2Deg - 90 - PlayerBody.rotation ;
-    //    Pistonjoint.motor = new JointMotor2D { motorSpeed = 100, maxMotorTorque = Pistonjoint.motor.maxMotorTorque };
-    //    //Debug.Log(Pistonjoint.angle);
-    //}
-
-    //public void AddForce(Vector2 dir)
-    //{
-    //    //PlayerBody.AddForce(dir);
-
-    //    //Debug.Log($"Spawned | IsOwner={IsOwner} | OwnerClientId={OwnerClientId} | LocalClientId={NetworkManager.Singleton.LocalClientId}");
-    //    //Debug.Log(IsOwner);
-    //    if(IsOwner)
-    //        AddPlayerForceServerRpc(dir);
-    //}
-
-
     [ServerRpc]
     public void RotateForceServerRpc(float force)
     {

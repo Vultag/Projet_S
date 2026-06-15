@@ -757,7 +757,7 @@ SpriteRenderer:
   m_SortingOrder: 1
   m_MaskInteraction: 0
   m_Sprite: {fileID: 3625043607559282579, guid: 19fb86013d8c24d6cb8410c0aadf30fa, type: 3}
-  m_Color: {r: 0, g: 0.46707344, b: 1, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -908,7 +908,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3061558566
+  GlobalObjectIdHash: 1643864336
   InScenePlacedSourceGlobalObjectIdHash: 4082568510
   DeferredDespawnTick: 0
   Ownership: 1
@@ -940,9 +940,11 @@ MonoBehaviour:
   Pistonjoint: {fileID: 1464795126279569126}
   graplingHook: {fileID: 6910588928660676015}
   propeller: {fileID: 7280305992149219815}
+  playerIcon: {fileID: 6111469343795154252}
   ticksTillPistonPushActivation: 50
   revertCooldown: 0
   activeRevertCooldown: 0
+  pistonPushArmed: 0
   pistonPushOrPull: 0
   activePowerup:
     UpdateTraits:
@@ -962,7 +964,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player
   ui: {fileID: 0}
-  playerIcon: {fileID: 6111469343795154252}
   Pistonjoint: {fileID: 1464795126279569126}
   PlayerBody: {fileID: 6587006526539534484}
   PlayerInputs: {fileID: -944628639613478452, guid: 1ee53a8cd743df343ac5b3e9d2de510c, type: 3}

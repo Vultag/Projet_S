@@ -7,13 +7,7 @@ public class ConfigureNetwork : MonoBehaviour
 
     [SerializeField] private GameObject serverManagerGB;
 
-    //public void HostServer()
-    //{
-    //    NetworkManager.Singleton.StartHost();
-    //    //gameUI.Player = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<Player>();
-    //    //gameUI.gameObject.SetActive(true);
-    //}
-    void Awake()
+    void Start()
     {
         NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
     }
@@ -26,35 +20,46 @@ public class ConfigureNetwork : MonoBehaviour
 
     void OnClientConnected(ulong clientId)
     {
-        //if (clientId != NetworkManager.Singleton.LocalClientId) Debug.LogError("PB");
-
         NetworkObject playerObj = NetworkManager.Singleton.ConnectedClients[clientId].PlayerObject;
-
 
         if (NetworkManager.Singleton.IsServer)
         {
-            //Debug.Log(playerObj.GetComponent<PlayerNet>());
-            serverManagerGB.GetComponent<ServerManager>().playerNets.Add(playerObj.GetComponent<PlayerNet>());
-            serverManagerGB.SetActive(true);
+            serverManagerGB.GetComponent<ServerManager>().enabled = true;
+            serverManagerGB.GetComponent<ServerManagerNet>().Players.Add(playerObj.GetComponent<PlayerNet>());
+            serverManagerGB.GetComponent<ServerManager>().playerJoin(playerObj.GetComponent<PlayerNet>());
+            Color playerColor = Color.white;
+            switch (serverManagerGB.GetComponent<ServerManagerNet>().Players.Count)
+            {
+                case 1:
+                    playerColor = Color.red;
+                    break;
+                case 2:
+                    playerColor = Color.blue;
+                    break;
+                case 3:
+                    playerColor = Color.green;
+                    break;
+                case 4:
+                    playerColor = Color.grey;
+                    break;
+
+            }
+            playerObj.GetComponent<PlayerNet>().playerIcon.color = playerColor;
         }
         else
         {
-            if(serverManagerGB != null)
-                Destroy(serverManagerGB);
+            if(serverManagerGB.GetComponent<ServerManager>() != null)
+                Destroy(serverManagerGB.GetComponent<ServerManager>());
         }
     }
 
     public void StartServer()
     {
         NetworkManager.Singleton.StartServer();
-        //gameUI.Player = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<Player>();
-        //gameUI.gameObject.SetActive(true);
     }
     public void JoinServer()
     {
         NetworkManager.Singleton.StartClient();
-        //gameUI.Player = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<Player>();
-        //gameUI.gameObject.SetActive(true);
     }
 
 }

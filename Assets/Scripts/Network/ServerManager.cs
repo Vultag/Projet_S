@@ -2,15 +2,36 @@
 using System;
 using System.Collections.Generic;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
+
+public class PlayerRigidbodyStates
+{
+    public byte playerRigidbodyStatesCount;
+    public rigidbodyState[] playerRigidbodyStates = new rigidbodyState[16];
+}
 
 public class ServerManager : MonoBehaviour
 {
-    private uint tick = 0;
-    private List<ulong> targetClientIds = new();
+    /// WRONG PLACE ?
+    [HideInInspector]
+    public uint tick = 0;
+    [HideInInspector]
+    public List<ulong> targetClientIds = new();
 
-    private StatePayload[] statePayloads = new StatePayload[4];
-    private InputPayload[] inputPayloads = new InputPayload[4];
+    [HideInInspector]
+    public StatePayload[] statePayloads = new StatePayload[4];
+    [HideInInspector]
+    public InputPayload[] inputPayloads = new InputPayload[4];
+
+    [HideInInspector]
+    public PlayerRigidbodyStates player1RigidbodyStates;
+    [HideInInspector]
+    public PlayerRigidbodyStates player2RigidbodyStates;
+    [HideInInspector]
+    public PlayerRigidbodyStates player3RigidbodyStates;
+    [HideInInspector]
+    public PlayerRigidbodyStates player4RigidbodyStates;
 
     private ServerManagerNet serverManagerNet;
 
@@ -19,6 +40,11 @@ public class ServerManager : MonoBehaviour
     private void Awake()
     {
         serverManagerNet = this.GetComponent<ServerManagerNet>();
+        player1RigidbodyStates = new();
+        player2RigidbodyStates = new();
+        player3RigidbodyStates = new();
+        player4RigidbodyStates = new();
+        this.AddComponent<ServerDataDispatcher>();
     }
 
 
@@ -66,7 +92,7 @@ public class ServerManager : MonoBehaviour
             }
         }
 
-        serverManagerNet.SendClientsInputsClientRpc(inputPayloads);
+        ///serverManagerNet.SendClientsInputsClientRpc(inputPayloads);
 
 
         short relativeTick;
@@ -84,59 +110,29 @@ public class ServerManager : MonoBehaviour
             Physics2D.Simulate(PlayerNet.gameFixedDeltaTime);
         }
 
-        {
-            byte i = 0;
-            foreach (PlayerNet playerNet in serverManagerNet.Players)
-            {
-                statePayloads[i] = new StatePayload
-                {
-                    tick = tick,
-                    playerPhyState = new PhysicsState
-                    {
-                        position = playerNet.PlayerBody.position,
-                        rotation = playerNet.PlayerBody.rotation,
-                        linearVelocity = playerNet.PlayerBody.linearVelocity,
-                        angularVelocity = playerNet.PlayerBody.angularVelocity,
-                    },
-                    pistonPhyState = new PhysicsState
-                    {
-                        position = playerNet.PistonBody.position,
-                        rotation = playerNet.PistonBody.rotation,
-                        linearVelocity = playerNet.PistonBody.linearVelocity,
-                        angularVelocity = playerNet.PistonBody.angularVelocity,
-                    },
-                    cogPhyState = new PhysicsState
-                    {
-                        position = playerNet.CogBody.position,
-                        rotation = playerNet.CogBody.rotation,
-                        linearVelocity = playerNet.CogBody.linearVelocity,
-                        angularVelocity = playerNet.CogBody.angularVelocity,
-                    },
-                    activeRevertCooldown = playerNet.activeRevertCooldown,
-                    revertCooldown = playerNet.revertCooldown,
-                    pistonPushOrPull = playerNet.pistonPushOrPull,
-                    ticksTillPistonPushActivation = playerNet.ticksTillPistonPushActivation,
-                    pistonAngle = playerNet.Pistonjoint.angle
-                };
-                i++;
-            }
-        }
-
-        serverManagerNet.SendLatestStatePayloadsClientRpc(statePayloads);
-
-
-        /// send frequency depending on network quality ?
-        /// send unreliable ?
-        ///reconciliation here ?
-
-
     }
 
-    public void playerJoin(PlayerNet newPlayerNet)
+    public void playerJoin(int playerCount,PlayerNet newPlayerNet)
     {
         targetClientIds.Add(newPlayerNet.OwnerClientId);
         newPlayerNet.inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
         newPlayerNet.inputPayloadRBuffer.Write(InputPayload.Default(statePayloads[0].tick));
+
+        switch (playerCount)
+        {
+            case 1:
+                newPlayerNet.gameObject.GetComponentInChildren<ObjectsStatesCollector>().playerRigidbodyStates = player1RigidbodyStates;
+                break;
+            case 2:
+                newPlayerNet.gameObject.GetComponentInChildren<ObjectsStatesCollector>().playerRigidbodyStates = player2RigidbodyStates;
+                break;
+            case 3:
+                newPlayerNet.gameObject.GetComponentInChildren<ObjectsStatesCollector>().playerRigidbodyStates = player3RigidbodyStates;
+                break;
+            case 4:
+                newPlayerNet.gameObject.GetComponentInChildren<ObjectsStatesCollector>().playerRigidbodyStates = player4RigidbodyStates;
+                break;
+        }
 
         serverManagerNet.SyncPlayersClientRpc(statePayloads, newPlayerNet.OwnerClientId);
 

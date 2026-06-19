@@ -681,12 +681,28 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 564958617547455835, guid: 5f31d815b656aa842b08603b06f1286d, type: 3}
+      propertyPath: m_Layer
+      value: 14
+      objectReference: {fileID: 0}
     - target: {fileID: 961353339504382940, guid: 5f31d815b656aa842b08603b06f1286d, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1747103044835213948, guid: 5f31d815b656aa842b08603b06f1286d, type: 3}
+      propertyPath: m_Layer
+      value: 14
+      objectReference: {fileID: 0}
+    - target: {fileID: 1747103044835213948, guid: 5f31d815b656aa842b08603b06f1286d, type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2261008285267836339, guid: 5f31d815b656aa842b08603b06f1286d, type: 3}
       propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2658372965881391745, guid: 5f31d815b656aa842b08603b06f1286d, type: 3}
+      propertyPath: m_BodyType
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2661044101051435803, guid: 5f31d815b656aa842b08603b06f1286d, type: 3}
@@ -763,9 +779,17 @@ PrefabInstance:
     - {fileID: 6276572804551560945, guid: 5f31d815b656aa842b08603b06f1286d, type: 3}
     - {fileID: 9030002122088173428, guid: 5f31d815b656aa842b08603b06f1286d, type: 3}
     - {fileID: 4574193140534458680, guid: 5f31d815b656aa842b08603b06f1286d, type: 3}
+    - {fileID: 6471683311559958965, guid: 5f31d815b656aa842b08603b06f1286d, type: 3}
+    - {fileID: 3903605013777262476, guid: 5f31d815b656aa842b08603b06f1286d, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1747103044835213948, guid: 5f31d815b656aa842b08603b06f1286d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1915753870}
+    - targetCorrespondingSourceObject: {fileID: 1747103044835213948, guid: 5f31d815b656aa842b08603b06f1286d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1915753874}
   m_SourcePrefab: {fileID: 100100000, guid: 5f31d815b656aa842b08603b06f1286d, type: 3}
 --- !u!1 &1342313694
 GameObject:
@@ -1866,6 +1890,62 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!1 &1915753864 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1747103044835213948, guid: 5f31d815b656aa842b08603b06f1286d, type: 3}
+  m_PrefabInstance: {fileID: 1132983129}
+  m_PrefabAsset: {fileID: 0}
+--- !u!233 &1915753870
+HingeJoint2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1915753864}
+  m_Enabled: 1
+  serializedVersion: 4
+  m_EnableCollision: 0
+  m_ConnectedRigidBody: {fileID: 0}
+  m_BreakForce: Infinity
+  m_BreakTorque: Infinity
+  m_BreakAction: 3
+  m_AutoConfigureConnectedAnchor: 1
+  m_Anchor: {x: 0, y: 0}
+  m_ConnectedAnchor: {x: -23.799995, y: 0}
+  m_UseConnectedAnchor: 1
+  m_UseMotor: 1
+  m_Motor:
+    m_MotorSpeed: 30
+    m_MaximumMotorForce: 10000
+  m_UseLimits: 0
+  m_AngleLimits:
+    m_LowerAngle: 0
+    m_UpperAngle: 359
+--- !u!114 &1915753874
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1915753864}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 1227509750
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 0
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 0
+  SyncOwnerTransformWhenParented: 0
+  AllowOwnerToParent: 0
 --- !u!1 &2069206297
 GameObject:
   m_ObjectHideFlags: 0
@@ -1897,6 +1977,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab2e5078360abae4391d74c0e2802e4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ServerManager
+  tick: 0
+  targetClientIds: 
 --- !u!4 &2069206299
 Transform:
   m_ObjectHideFlags: 0

@@ -179,14 +179,14 @@ public class PlayerNet : NetworkBehaviour
         }
         else if (IsOwner)
         {
-            //Destroy(serverPlayer);
             Destroy(clientPlayer);
-            //player.enabled = true;
+            Destroy(GetComponentInChildren<ObjectsStatesCollector>().gameObject);
         }
         else
         {
             Destroy(player);
             clientPlayer.enabled = true;
+            Destroy(GetComponentInChildren<ObjectsStatesCollector>().gameObject);
         }
 
 
@@ -225,6 +225,25 @@ public class PlayerNet : NetworkBehaviour
         pistonPushArmed = (pistonPushArmed == 1 | payload.pistonPush == true) ? (byte)1 : (byte)0;
         revertCooldown = (byte)(revertCooldown - activeRevertCooldown);
         ticksTillPistonPushActivation = (byte)(ticksTillPistonPushActivation - pistonPushArmed);
+
+        if(IsServer)
+        {
+            //if (payload.pistonPush == true)
+            //    Debug.Log("jump");
+
+            //if (payload.direction != 0)
+            //    Debug.Log(payload.direction);
+
+
+            //if (payload.direction != 0 && inputPayloadRBuffer.Read((short)(relativeTick-1)).direction == 0)
+            //    Debug.Log("start dir at " + payload.tick);
+
+
+            //if (payload.direction == 0 && inputPayloadRBuffer.Read((short)(relativeTick - 1)).direction != 0)
+            //    Debug.Log("end dir at " + payload.tick);
+
+        }
+
 
         if (ticksTillPistonPushActivation > 50) Debug.Log("bug222");
         if (revertCooldown > 120) Debug.Log("bugsss2222");

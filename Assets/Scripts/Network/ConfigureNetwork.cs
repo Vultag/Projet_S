@@ -1,4 +1,5 @@
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class ConfigureNetwork : MonoBehaviour
@@ -26,9 +27,11 @@ public class ConfigureNetwork : MonoBehaviour
         {
             serverManagerGB.GetComponent<ServerManager>().enabled = true;
             serverManagerGB.GetComponent<ServerManagerNet>().Players.Add(playerObj.GetComponent<PlayerNet>());
-            serverManagerGB.GetComponent<ServerManager>().playerJoin(playerObj.GetComponent<PlayerNet>());
+            int playerCount = serverManagerGB.GetComponent<ServerManagerNet>().Players.Count;
+            serverManagerGB.GetComponent<ServerManager>().playerJoin(playerCount,playerObj.GetComponent<PlayerNet>());
+            playerObj.GetComponentInChildren<ObjectsStatesCollector>().enabled = true;
             Color playerColor = Color.white;
-            switch (serverManagerGB.GetComponent<ServerManagerNet>().Players.Count)
+            switch (playerCount)
             {
                 case 1:
                     playerColor = Color.red;

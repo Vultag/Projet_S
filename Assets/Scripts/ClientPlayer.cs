@@ -62,8 +62,8 @@ public class ClientPlayer : MonoBehaviour
             activeRevertCooldown = playerNet.activeRevertCooldown,
             revertCooldown = playerNet.revertCooldown,
             pistonPushOrPull = playerNet.pistonPushOrPull,
-            pistonPushArmed = playerNet.pistonPushArmed==0 ? false : true,
-            pistonAngle = Pistonjoint.angle
+            pistonAngle = Pistonjoint.angle,
+            pistonPushArmed = playerNet.pistonPushArmed == 0 ? false : true,
         });
 
         tick++;

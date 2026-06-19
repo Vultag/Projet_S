@@ -94,9 +94,10 @@ public class Player : MonoBehaviour
 
     private void FixedUpdate()
     {
-        serverManagerNet.Reconciliation(tick);
+        serverManagerNet.Reconciliation(tick-1);
 
         activeInputPayload.tick = tick;
+
         activeInputPayload.direction = activeDirection;
 
         playerNet.ProcessInputPayload(activeInputPayload);
@@ -137,8 +138,8 @@ public class Player : MonoBehaviour
             activeRevertCooldown = playerNet.activeRevertCooldown,
             revertCooldown = playerNet.revertCooldown,
             pistonPushOrPull = playerNet.pistonPushOrPull,
+            pistonAngle = Pistonjoint.angle,
             pistonPushArmed = playerNet.pistonPushArmed == 0 ? false : true,
-            pistonAngle = Pistonjoint.angle
         });
   
         tick++;
@@ -148,11 +149,6 @@ public class Player : MonoBehaviour
     {
         activeInputPayload.pistonPush = true;
         activeInputPayload.pistonDirection = dir;
-    }
-    [ServerRpc]
-    public void RotateForceServerRpc(float force)
-    {
-        PlayerBody.AddTorque(force, ForceMode2D.Force);
     }
     [ServerRpc]
     public void AddPlayerForceServerRpc(Vector2 force)
@@ -173,11 +169,6 @@ public class Player : MonoBehaviour
     //}
    
 
-    [ServerRpc]
-    public void BumpServerRpc(Vector2 force)
-    {
-        PlayerBody.AddForce(force,ForceMode2D.Impulse);
-    }
     public void Respawn()
     {
         //if(IsOwner)

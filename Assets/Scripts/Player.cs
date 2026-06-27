@@ -15,7 +15,7 @@ public class Player : MonoBehaviour
     private ServerManagerNet serverManagerNet;
 
     private PlayerNet playerNet;
-    private uint tick;
+    //private uint tick;
 
     public SliderJoint2D Pistonjoint;
     public Rigidbody2D PlayerBody;
@@ -53,10 +53,14 @@ public class Player : MonoBehaviour
 
     private InputPayload activeInputPayload;
 
+    private GameManager gameManager;
+
     public void syncTick(uint atTick)
     {
-        tick = atTick;
+        ServerManagerNet.tick = atTick;
+        //Debug.Log("sync " + atTick);
     }
+
 
     private void Start()
     {
@@ -79,12 +83,12 @@ public class Player : MonoBehaviour
         ui.player = this;
         ui.playerNet = GetComponent<PlayerNet>();
 
+        gameManager = FindFirstObjectByType<GameManager>(FindObjectsInactive.Include);
+
         Camera.main.GetComponent<TrackPlayer>().PlayerGB = playerNet.PlayerBody.gameObject;
         Camera.main.GetComponent<TrackPlayer>().enabled = true;
 
         ui.gameObject.SetActive(true);
-        var gameManager = FindFirstObjectByType<GameManager>(FindObjectsInactive.Include);
-        gameManager.gameObject.SetActive(true);
 
         serverManagerNet = FindFirstObjectByType<ServerManagerNet>(FindObjectsInactive.Include).GetComponent<ServerManagerNet>();
 
@@ -94,9 +98,11 @@ public class Player : MonoBehaviour
 
     private void FixedUpdate()
     {
-        serverManagerNet.Reconciliation(tick-1);
 
-        activeInputPayload.tick = tick;
+        //if (ServerManagerNet.tick == 100) ArmJumping(Vector2.down);
+
+
+        activeInputPayload.tick = ServerManagerNet.tick;
 
         activeInputPayload.direction = activeDirection;
 
@@ -105,14 +111,28 @@ public class Player : MonoBehaviour
         activeInputPayload.pistonPush = false;
 
 
+        //for (int i = 0; i < PlayerNet.PayloadRBufferSize; i++)
+        //{
+        //    if (playerNet.inputPayloadRBuffer.Read((short)(0 - i)).pistonPush)
+        //    {
+        //        Debug.Log("arm at index in buffer : " + (playerNet.inputPayloadRBuffer.head + i) + "  head : "+ playerNet.inputPayloadRBuffer.head);
+
+        //    }
+        //}
+
+        serverManagerNet.Reconciliation();
+
+        gameManager.Tick(ServerManagerNet.tick);
+
         playerNet.Tick(0);
 
         Physics2D.Simulate(PlayerNet.gameFixedDeltaTime);
 
-        /// NO NEED FOR ENTIRE STATE ? JUST POSITION ?
+
+        /// Debug purpose for now
         playerNet.statePayloadRBuffer.Write(new StatePayload
         {
-            tick = tick,
+            tick = ServerManagerNet.tick,
             playerPhyState = new PhysicsState
             {
                 position = PlayerBody.position,
@@ -139,10 +159,11 @@ public class Player : MonoBehaviour
             revertCooldown = playerNet.revertCooldown,
             pistonPushOrPull = playerNet.pistonPushOrPull,
             pistonAngle = Pistonjoint.angle,
-            pistonPushArmed = playerNet.pistonPushArmed == 0 ? false : true,
+            pistonPushArmed = playerNet.pistonPushArmed == 1 ? true : false,
         });
-  
-        tick++;
+
+
+        ServerManagerNet.tick++;
     }
 
     public void ArmJumping(Vector2 dir)

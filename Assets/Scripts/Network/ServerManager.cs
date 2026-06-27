@@ -14,8 +14,8 @@ public class PlayerRigidbodyStates
 public class ServerManager : MonoBehaviour
 {
     /// WRONG PLACE ?
-    [HideInInspector]
-    public uint tick = 0;
+    //[HideInInspector]
+    //public uint tick = 0;
     [HideInInspector]
     public List<ulong> targetClientIds = new();
 
@@ -37,6 +37,12 @@ public class ServerManager : MonoBehaviour
 
     private uint maximumTickGap = 240;
 
+    private GameManager gameManager;
+    private ServerDataDispatcher dataDispatcher;
+
+    private uint temp;
+    private uint tempAA;
+
     private void Awake()
     {
         serverManagerNet = this.GetComponent<ServerManagerNet>();
@@ -44,7 +50,8 @@ public class ServerManager : MonoBehaviour
         player2RigidbodyStates = new();
         player3RigidbodyStates = new();
         player4RigidbodyStates = new();
-        this.AddComponent<ServerDataDispatcher>();
+        dataDispatcher = this.AddComponent<ServerDataDispatcher>();
+        gameManager = FindFirstObjectByType<GameManager>(FindObjectsInactive.Include);
     }
 
 
@@ -77,6 +84,7 @@ public class ServerManager : MonoBehaviour
         {
             if ((earlyestPayloadTick - oldestCommonPayloadTick) > maximumTickGap)
             {
+                Debug.Log("qsdqsdaara");
                 oldestCommonPayloadTick = earlyestPayloadTick - maximumTickGap;
             }
             for (int i = 0; i < serverManagerNet.Players.Count; i++)
@@ -94,21 +102,39 @@ public class ServerManager : MonoBehaviour
 
         ///serverManagerNet.SendClientsInputsClientRpc(inputPayloads);
 
+        if (ServerManagerNet.tick >= oldestCommonPayloadTick)
+        {
+            return;
+        }
 
         short relativeTick;
         /// PROCESS AS MUCH INPUT AS POSSIBLE TO OUTPUT THE PHYSICSTATES
-        while (tick < oldestCommonPayloadTick)
+        while (ServerManagerNet.tick < oldestCommonPayloadTick)
         {
-            tick++;
+            ServerManagerNet.tick++;
+            gameManager.Tick(ServerManagerNet.tick);
 
             foreach (PlayerNet playerNet in playerNets)
             {
-                relativeTick = (short)Mathf.Min((short)(tick - playerNet.inputPayloadRBuffer.Read(0).tick),0);
+
+                short leadingPayloadTickDiff = (short)(oldestCommonPayloadTick - playerNet.inputPayloadRBuffer.Read(0).tick);
+
+                var arf = (short)(ServerManagerNet.tick + leadingPayloadTickDiff);
+
+                if (leadingPayloadTickDiff > 0) Debug.Log("ezr456   " + leadingPayloadTickDiff + "   " + oldestCommonPayloadTick + "   " + earlyestPayloadTick);
+                if (leadingPayloadTickDiff != 0) Debug.Log(leadingPayloadTickDiff);
+
+                relativeTick = (short)((ServerManagerNet.tick - oldestCommonPayloadTick)+ leadingPayloadTickDiff);
+                if (relativeTick > 0) Debug.Log("5465146");
                 playerNet.Tick(relativeTick);
+
+               // if (playerNet.inputPayloadRBuffer.Read(relativeTick).pistonPush) Debug.Log("jump at " + (ServerManagerNet.tick));
             }
 
             Physics2D.Simulate(PlayerNet.gameFixedDeltaTime);
         }
+
+        dataDispatcher.shouldDispatch = true;
 
     }
 
@@ -116,7 +142,9 @@ public class ServerManager : MonoBehaviour
     {
         targetClientIds.Add(newPlayerNet.OwnerClientId);
         newPlayerNet.inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
-        newPlayerNet.inputPayloadRBuffer.Write(InputPayload.Default(statePayloads[0].tick));
+        newPlayerNet.inputPayloadRBuffer.SlideHead(-1);
+        newPlayerNet.inputPayloadRBuffer.Write(InputPayload.Default(ServerManagerNet.tick));
+        //Debug.Log(ServerManagerNet.tick);
 
         switch (playerCount)
         {

@@ -19,15 +19,24 @@ public struct rigidbodyState : INetworkSerializable
 
 public class ServerManagerNet : NetworkBehaviour
 {
+    static public uint tick;
+
     [HideInInspector]
     public List<PlayerNet> Players;
     private uint latestServerStatePayloadTick = 0;
 
     private bool pendingServerData;
 
-    //[HideInInspector]
-    //public Dictionary<uint,Rigidbody2D> rigidbodyNetIds;
-    //rigidbodyNetIds.TryGetValue(rigidbodyStates[i].rigidbodyNetId, out var rigidbody);
+    private GameManager gameManager;
+
+    uint temp;
+
+    private void Awake()
+    {
+        gameManager = FindFirstObjectByType<GameManager>(FindObjectsInactive.Include);
+        gameManager.gameObject.SetActive(true);
+    }
+
 
     [ClientRpc(Delivery = RpcDelivery.Unreliable)]
     public void SendLatestDataPayloadsClientRpc(uint tick,byte rigidbodyNumber,rigidbodyState[] rigidbodyStates, StatePayload[] playersStatePayloads, ClientRpcParams rpcParams)
@@ -36,24 +45,32 @@ public class ServerManagerNet : NetworkBehaviour
         if (tick <= latestServerStatePayloadTick)
             return;
 
+        //if (tick == latestServerStatePayloadTick + 1)
+        //    Debug.Log("sdqsd");
+
+        //if (pendingServerData)
+        //    Debug.Log("remplace");
+
         latestServerStatePayloadTick = tick;
         pendingServerData = true;
 
-        //Debug.Log("new " + tick);
+        //Debug.Log(rigidbodyNumber);
 
         for (int i = 0; i < rigidbodyNumber; i++)
         {
+            Debug.Log("rezrzerzea;fmlgqoq,nolnikqogni");
             /// OPIT : over all spawned objects -> PB?
-            var rigidbody = NetworkManager.Singleton.SpawnManager.SpawnedObjects[rigidbodyStates[i].rigidbodyNetId].GetComponent<Rigidbody2D>();
-            rigidbody.position = rigidbodyStates[i].phyState.position;
-            rigidbody.rotation = rigidbodyStates[i].phyState.rotation;
-            rigidbody.linearVelocity = rigidbodyStates[i].phyState.linearVelocity;
-            rigidbody.angularVelocity = rigidbodyStates[i].phyState.angularVelocity;
+            //var rigidbody = NetworkManager.Singleton.SpawnManager.SpawnedObjects[rigidbodyStates[i].rigidbodyNetId].GetComponent<Rigidbody2D>();
+            //rigidbody.position = rigidbodyStates[i].phyState.position;
+            //rigidbody.rotation = rigidbodyStates[i].phyState.rotation;
+            //rigidbody.linearVelocity = rigidbodyStates[i].phyState.linearVelocity;
+            //rigidbody.angularVelocity = rigidbodyStates[i].phyState.angularVelocity;
         }
 
         for (int i = 0; i < Players.Count; i++)
         {
             Players[i].latestServerStatePayload = playersStatePayloads[i];
+            //Debug.Log("receive tick start : " +playersStatePayloads[i].tick);
         }
     }
 
@@ -117,6 +134,7 @@ public class ServerManagerNet : NetworkBehaviour
             Players[i].latestServerStatePayload = statePayloads[i];
         }
     }
+
     [ClientRpc(Delivery = RpcDelivery.Unreliable)]
     public void SendClientsInputsClientRpc(InputPayload[] inputPayloads)
     {
@@ -132,38 +150,77 @@ public class ServerManagerNet : NetworkBehaviour
     }
 
 
-    public bool ShouldReconcile(short rollbackTicks)
-    {
-        /// SHOULD RECONCILE
-        foreach (PlayerNet playerNet in Players)
-        {
-            var dist = Vector2.Distance(playerNet.latestServerStatePayload.playerPhyState.position, playerNet.statePayloadRBuffer.Read((short)(rollbackTicks)).playerPhyState.position);
+    //public bool ShouldReconcile(short rollbackTicks)
+    //{
+    //    /// SHOULD RECONCILE
+    //    foreach (PlayerNet playerNet in Players)
+    //    {
+    //        var dist = Vector2.Distance(playerNet.latestServerStatePayload.playerPhyState.position, playerNet.statePayloadRBuffer.Read((short)(rollbackTicks)).playerPhyState.position);
 
-            if ((Vector2.Distance(playerNet.latestServerStatePayload.playerPhyState.position, playerNet.statePayloadRBuffer.Read((short)(rollbackTicks)).playerPhyState.position) > 0.05f))
-                return true;
-        }
-        return false;
-        //foreach (PlayerNet playerNet in Players)
-        //{
-        //    if (Mathf.Abs(playerNet.latestServerStatePayload.playerPhyState.rotation - playerNet.statePayloadRBuffer.Read((short)(rollbackTicks)).playerPhyState.rotation) > 0.05f)
-        //        return true;
-        //}
-        //return false;
-    }
+    //        if ((Vector2.Distance(playerNet.latestServerStatePayload.playerPhyState.position, playerNet.statePayloadRBuffer.Read((short)(rollbackTicks)).playerPhyState.position) > 0.05f))
+    //            return true;
+    //    }
+    //    return false;
 
-    public void Reconciliation(uint tick)
+    //    //foreach (PlayerNet playerNet in Players)
+    //    //{
+    //    //    if (Mathf.Abs(playerNet.latestServerStatePayload.playerPhyState.rotation - playerNet.statePayloadRBuffer.Read((short)(rollbackTicks)).playerPhyState.rotation) > 0.05f)
+    //    //        return true;
+    //    //}
+    //    //return false;
+    //}
+
+    public void Reconciliation()
     {
+
+
 
         uint newServerStatePayloadTick = Players[0].latestServerStatePayload.tick;
 
         /// 1 tick value for all payload ?
         short rollbackTicks = (short)(newServerStatePayloadTick - tick);
 
+        var statePayloadRBuffer = Players[0].statePayloadRBuffer.Read((short)(rollbackTicks+1));
+        
+        ///debug
+        /*
+        if (newServerStatePayloadTick != statePayloadRBuffer.tick)
+        {
+            Debug.Log("TICK  " + newServerStatePayloadTick + "   " + statePayloadRBuffer.tick);
+        }
+        if (statePayloadRBuffer.activeRevertCooldown != Players[0].latestServerStatePayload.activeRevertCooldown)
+            Debug.Log("activeRevertCooldown " + statePayloadRBuffer.activeRevertCooldown + "   " + Players[0].latestServerStatePayload.activeRevertCooldown);
+
+        if (statePayloadRBuffer.revertCooldown != Players[0].latestServerStatePayload.revertCooldown)
+            Debug.Log("revertCooldown " + statePayloadRBuffer.revertCooldown + "   " + Players[0].latestServerStatePayload.revertCooldown);
+
+        if (statePayloadRBuffer.ticksTillPistonPushActivation != Players[0].latestServerStatePayload.ticksTillPistonPushActivation)
+            Debug.Log("ticksTillPistonPushActivation " + statePayloadRBuffer.ticksTillPistonPushActivation + "   " + Players[0].latestServerStatePayload.ticksTillPistonPushActivation);
+
+        if (statePayloadRBuffer.pistonAngle != Players[0].latestServerStatePayload.pistonAngle)
+            Debug.Log("pistonAngle " + statePayloadRBuffer.pistonAngle + "   " + Players[0].latestServerStatePayload.pistonAngle);
+
+        if (statePayloadRBuffer.pistonPushArmed != Players[0].latestServerStatePayload.pistonPushArmed)
+            Debug.Log("pistonPushArmed " + statePayloadRBuffer.pistonPushArmed + "   " + Players[0].latestServerStatePayload.pistonPushArmed);
+        if (statePayloadRBuffer.pistonPushOrPull != Players[0].latestServerStatePayload.pistonPushOrPull)
+            Debug.Log("pistonPushOrPull " + statePayloadRBuffer.pistonPushArmed + "   " + Players[0].latestServerStatePayload.pistonPushOrPull);
+        */
+
         /// Discard outdated ServerStatePayloads
-        if (rollbackTicks >= 0 | !pendingServerData)
+        if (!pendingServerData)
         {
             return;
         }
+
+
+        if (rollbackTicks >= 0)
+            Debug.Log("000");
+
+        if (newServerStatePayloadTick >= tick)
+            Debug.Log("jjjjjjjjjjjj   " + newServerStatePayloadTick + "   " + tick + "   " + rollbackTicks + "   " + temp);
+
+        temp = (uint)(tick + rollbackTicks);
+
         //else
         //    Debug.Log("recon");
 
@@ -179,24 +236,45 @@ public class ServerManagerNet : NetworkBehaviour
 
         //Debug.Log("recon");
 
+        if (Players.Count == 0)
+            Debug.Log("eeeeeeeeeeeee");
+
+
         foreach (PlayerNet player in Players)
         {
             player.SynchronizeState();
         }
 
 
-        while (rollbackTicks < 0)
+
+        while (rollbackTicks < -1)
         {
             rollbackTicks++;
+            gameManager.Tick((uint)(tick + rollbackTicks));
+
+
             foreach (PlayerNet player in Players)
             {
+
                 player.Tick(rollbackTicks);
             }
             Physics2D.Simulate(PlayerNet.gameFixedDeltaTime);
+
+            //var dist = Vector2.Distance(Players[0].PlayerBody.position, Players[0].statePayloadRBuffer.Read(rollbackTicks).playerPhyState.position);
+            //if (dist > 0.5f)
+            //{
+            //    Debug.Log("rollback bug " + ((tick-newServerStatePayloadTick)+rollbackTicks) +" ticks into rollback with " + dist);
+            //    Debug.Log(Players[0].ticksTillPistonPushActivation);
+            //    Debug.Log(Players[0].activeRevertCooldown);
+            //    Debug.Log(Players[0].revertCooldown);
+            //    Debug.Log(Players[0].pistonPushOrPull);
+            //    Debug.Log(Players[0].pistonPushArmed);
+            //}
+
         }
 
         pendingServerData = false;
-        latestServerStatePayloadTick = tick;
+        latestServerStatePayloadTick = (tick-1);
 
     }
 

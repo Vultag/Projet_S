@@ -121,13 +121,13 @@ public class PlayerNet : NetworkBehaviour
     private JointMotor2D PullM;
 
     [HideInInspector]
-    public byte ticksTillPistonPushActivation = 50;
+    public byte ticksTillPistonPushActivation;
     [HideInInspector]
     public byte revertCooldown;
     [HideInInspector]
-    public byte activeRevertCooldown = 0;
+    public byte activeRevertCooldown;
     [HideInInspector]
-    public byte pistonPushArmed = 0;
+    public byte pistonPushArmed;
     [HideInInspector]
     public bool pistonPushOrPull;
 
@@ -155,8 +155,14 @@ public class PlayerNet : NetworkBehaviour
     private Player player;
     private ClientPlayer clientPlayer;
 
+
     public override void OnNetworkSpawn()
     {
+        revertCooldown = 120;
+        ticksTillPistonPushActivation = 50;
+        activeRevertCooldown = 0;
+        pistonPushArmed = 0;
+
         //Debug.Log($"Spawned | IsOwner={IsOwner} | OwnerClientId={OwnerClientId} | LocalClientId={NetworkManager.Singleton.LocalClientId}");
 
         player = GetComponent<Player>();
@@ -197,6 +203,15 @@ public class PlayerNet : NetworkBehaviour
 
     public void SynchronizeState()
     {
+
+        //PlayerBody.Sleep();
+        //PistonBody.Sleep();
+        //CogBody.Sleep();
+        //PlayerBody.WakeUp();
+        //PistonBody.WakeUp();
+        //CogBody.WakeUp();
+
+
         PlayerBody.position = latestServerStatePayload.playerPhyState.position;
         PlayerBody.rotation = latestServerStatePayload.playerPhyState.rotation;
         PlayerBody.linearVelocity = latestServerStatePayload.playerPhyState.linearVelocity;
@@ -216,17 +231,48 @@ public class PlayerNet : NetworkBehaviour
         PistonRotate(latestServerStatePayload.pistonAngle);
         pistonPushOrPull = latestServerStatePayload.pistonPushOrPull;
         pistonPushArmed = latestServerStatePayload.pistonPushArmed ? (byte)1 : (byte)0;
+
+        if (ticksTillPistonPushActivation == 0) Debug.Log("qbsdqsbqsdq");
+        if (revertCooldown == 0) Debug.Log("xcwcwx");
+
+        //if (pistonPushArmed == 1 & ticksTillPistonPushActivation == 49) Debug.Log("arm sync");
+        //if (pistonPushArmed == 1 & ticksTillPistonPushActivation == 50) Debug.Log("qcqscqcscqscxc");
+        //if (pistonPushArmed == 1 & ticksTillPistonPushActivation == 48) Debug.Log("wxccwx");
+        //if (pistonPushArmed == 1 & ticksTillPistonPushActivation == 0) Debug.Log("549xwcxxcw849");
+
+        //if (pistonPushArmed == 1) Debug.Log(ticksTillPistonPushActivation + "   " + latestServerStatePayload.tick + "   " + ServerManagerNet.tick);
     }
 
     public void Tick(short relativeTick)
     {
         InputPayload payload = inputPayloadRBuffer.Read(relativeTick);
 
+
         pistonPushArmed = (pistonPushArmed == 1 | payload.pistonPush == true) ? (byte)1 : (byte)0;
         revertCooldown = (byte)(revertCooldown - activeRevertCooldown);
         ticksTillPistonPushActivation = (byte)(ticksTillPistonPushActivation - pistonPushArmed);
 
-        if(IsServer)
+
+
+        if (payload.pistonPush == true)
+        {
+            //Debug.Log("arm at index in buffer : " +  ((inputPayloadRBuffer.head + relativeTick) & (PlayerNet.PayloadRBufferSize - 1)) + "   rollback : " + relativeTick + "    local tick : " + ServerManagerNet.tick + "    combined : " + (ServerManagerNet.tick+relativeTick) + "    head : " + inputPayloadRBuffer.head);
+
+            //if (IsServer) Debug.Log("arm at " + (ServerManagerNet.tick) + " angle " + Pistonjoint.angle);
+            //else
+            //    Debug.Log("arm at " + (ServerManagerNet.tick + relativeTick) + " angle " + Pistonjoint.angle);
+            //Debug.Log("arm");
+
+        }
+        //if (pistonPushArmed == 1)
+        //{
+        //    Debug.Log(ticksTillPistonPushActivation + " at tick " + ServerManagerNet.tick + "  combined : " + (ServerManagerNet.tick+relativeTick));
+        //}
+
+        //if(payload.pistonPush)
+        //    Debug.Log("push");
+
+        if (IsServer)
         {
             //if (payload.pistonPush == true)
             //    Debug.Log("jump");
@@ -245,17 +291,40 @@ public class PlayerNet : NetworkBehaviour
         }
 
 
-        if (ticksTillPistonPushActivation > 50) Debug.Log("bug222");
-        if (revertCooldown > 120) Debug.Log("bugsss2222");
+        if (ticksTillPistonPushActivation > 50 | ticksTillPistonPushActivation < 0) Debug.Log("bug222");
+        if (revertCooldown > 120 | revertCooldown < 0) Debug.Log("bugsss2222");
 
         if (revertCooldown == 0)
         {
-            PistonPull();
+
+            Pistonjoint.motor = PullM;
+            revertCooldown = 120;
+            activeRevertCooldown = 0;
             pistonPushOrPull = false;
+
+            //Debug.Log("revert at index in buffer : " + ((inputPayloadRBuffer.head + relativeTick) % 512) + "   rollback : " + relativeTick + "    local tick : " + ServerManagerNet.tick + "    combined : " + (ServerManagerNet.tick + relativeTick) + "    head : " + inputPayloadRBuffer.head);
+            
+            //Debug.Log("revert at " + (ServerManagerNet.tick + relativeTick));
+            //if (IsServer) Debug.Log("revert at " + (ServerManagerNet.tick));
+            //else Debug.Log("revert at " + (ServerManagerNet.tick + relativeTick));
+            //Debug.Log("revert");
+
+            //if (payload.pistonPush == true) Debug.Log("sdsqdsqd");
+            //if (ticksTillPistonPushActivation == 0) Debug.Log("adzazd");
         }
         if (ticksTillPistonPushActivation == 0)
         {
-            PistonPush(payload.pistonDirection);
+            PistonRotate(payload.pistonDirection);
+            Pistonjoint.motor = PushM;
+            activeRevertCooldown = 1;
+            pistonPushArmed = 0;
+            revertCooldown = 120;
+
+            //Debug.Log("push at index in buffer : " + ((inputPayloadRBuffer.head + relativeTick) % 512) + "   rollback : " + relativeTick + "    local tick : " + ServerManagerNet.tick + "    combined : " + (ServerManagerNet.tick + relativeTick) + "    head : " + inputPayloadRBuffer.head);
+            //Debug.Log("push at " + (ServerManagerNet.tick + relativeTick));
+
+            if (payload.pistonPush == true) Debug.Log("rerzerzerze");
+
             ticksTillPistonPushActivation = 50;
             pistonPushOrPull = true;
         }
@@ -264,14 +333,6 @@ public class PlayerNet : NetworkBehaviour
 
     }
 
-    public void PistonPush(Vector2 dir)
-    {
-        PistonRotate(dir);
-        Pistonjoint.motor = PushM;
-        activeRevertCooldown = 1;
-        pistonPushArmed = 0;
-        revertCooldown = 120;
-    }
     private void PistonRotate(Vector2 dir)
     {
         //Pistonjoint.angle = -Mathf.Atan2(dir.x, dir.y) * Mathf.Rad2Deg - 90 - PlayerBody.rotation;
@@ -280,12 +341,6 @@ public class PlayerNet : NetworkBehaviour
     private void PistonRotate(float angle)
     {
         Pistonjoint.angle = angle;
-    }
-    public void PistonPull()
-    {
-        Pistonjoint.motor = PullM;
-        revertCooldown = 120;
-        activeRevertCooldown = 0;
     }
     public void ProcessInputPayload(InputPayload inputPayload)
     {

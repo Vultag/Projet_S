@@ -6,6 +6,8 @@ public class ServerDataDispatcher : MonoBehaviour
     private ServerManagerNet serverManagerNet;
     private ServerManager serverManager;
 
+    public bool shouldDispatch;
+
     private void Awake()
     {
         serverManagerNet = this.GetComponent<ServerManagerNet>();
@@ -14,6 +16,8 @@ public class ServerDataDispatcher : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (!shouldDispatch)
+            return;
 
         {
             byte i = 0;
@@ -21,7 +25,7 @@ public class ServerDataDispatcher : MonoBehaviour
             {
                 serverManager.statePayloads[i] = new StatePayload
                 {
-                    tick = serverManager.tick,
+                    tick = ServerManagerNet.tick,
                     playerPhyState = new PhysicsState
                     {
                         position = playerNet.PlayerBody.position,
@@ -71,8 +75,10 @@ public class ServerDataDispatcher : MonoBehaviour
             }
             ;
 
+            //Debug.Log("sent tick start : " + serverManager.statePayloads[0].tick);
+
             serverManagerNet.SendLatestDataPayloadsClientRpc(
-             serverManager.tick,
+             ServerManagerNet.tick,
              playerRigidbodyStates.playerRigidbodyStatesCount,
              playerRigidbodyStates.playerRigidbodyStates,
              serverManager.statePayloads,
@@ -84,6 +90,8 @@ public class ServerDataDispatcher : MonoBehaviour
         serverManager.player2RigidbodyStates.playerRigidbodyStatesCount = 0;
         serverManager.player3RigidbodyStates.playerRigidbodyStatesCount = 0;
         serverManager.player4RigidbodyStates.playerRigidbodyStatesCount = 0;
+
+        shouldDispatch = false;
 
     }
 

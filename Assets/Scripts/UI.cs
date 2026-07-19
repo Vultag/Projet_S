@@ -199,6 +199,9 @@ public class UI : MonoBehaviour
         {
             player.activeDirection = 0;
         }
+
+        
+
     }
     public void JoystickPressed()
     {

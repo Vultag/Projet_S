@@ -5,8 +5,8 @@ using UnityEngine;
 public class ObjectsStatesCollector : MonoBehaviour
 {
 
-    [HideInInspector]
-    public PlayerRigidbodyStates playerRigidbodyStates;
+    //[HideInInspector]
+    //public PlayerRigidbodyStates playerRigidbodyStates;
 
     //private void FixedUpdate()
     //{

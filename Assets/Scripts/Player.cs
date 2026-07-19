@@ -17,8 +17,10 @@ public class Player : MonoBehaviour
     private PlayerNet playerNet;
     //private uint tick;
 
-    public SliderJoint2D Pistonjoint;
-    public Rigidbody2D PlayerBody;
+    //public SliderJoint2D Pistonjoint;
+    //public Rigidbody2D PlayerBody;
+    public RapierSliderJoint Pistonjoint;
+    public RapierBody PlayerBody;
 
     public InputActionAsset PlayerInputs;
 
@@ -64,6 +66,7 @@ public class Player : MonoBehaviour
 
     private void Start()
     {
+
         //Debug.Log($"Spawned | IsOwner={IsOwner} | OwnerClientId={OwnerClientId} | LocalClientId={NetworkManager.Singleton.LocalClientId}");
 
         playerNet = GetComponent<PlayerNet>();
@@ -111,56 +114,48 @@ public class Player : MonoBehaviour
         activeInputPayload.pistonPush = false;
 
 
-        //for (int i = 0; i < PlayerNet.PayloadRBufferSize; i++)
-        //{
-        //    if (playerNet.inputPayloadRBuffer.Read((short)(0 - i)).pistonPush)
-        //    {
-        //        Debug.Log("arm at index in buffer : " + (playerNet.inputPayloadRBuffer.head + i) + "  head : "+ playerNet.inputPayloadRBuffer.head);
-
-        //    }
-        //}
-
         serverManagerNet.Reconciliation();
 
         gameManager.Tick(ServerManagerNet.tick);
 
         playerNet.Tick(0);
 
-        Physics2D.Simulate(PlayerNet.gameFixedDeltaTime);
+        //Physics2D.Simulate(PlayerNet.gameFixedDeltaTime);
+        RapierWorld.PhysicsStep(PlayerNet.gameFixedDeltaTime);
 
 
         /// Debug purpose for now
-        playerNet.statePayloadRBuffer.Write(new StatePayload
-        {
-            tick = ServerManagerNet.tick,
-            playerPhyState = new PhysicsState
-            {
-                position = PlayerBody.position,
-                rotation = PlayerBody.rotation,
-                linearVelocity = PlayerBody.linearVelocity,
-                angularVelocity = PlayerBody.angularVelocity,
-            },
-            pistonPhyState = new PhysicsState
-            {
-                position = playerNet.PistonBody.position,
-                rotation = playerNet.PistonBody.rotation,
-                linearVelocity = playerNet.PistonBody.linearVelocity,
-                angularVelocity = playerNet.PistonBody.angularVelocity,
-            },
-            cogPhyState = new PhysicsState
-            {
-                position = playerNet.CogBody.position,
-                rotation = playerNet.CogBody.rotation,
-                linearVelocity = playerNet.CogBody.linearVelocity,
-                angularVelocity = playerNet.CogBody.angularVelocity,
-            },
-            ticksTillPistonPushActivation = playerNet.ticksTillPistonPushActivation,
-            activeRevertCooldown = playerNet.activeRevertCooldown,
-            revertCooldown = playerNet.revertCooldown,
-            pistonPushOrPull = playerNet.pistonPushOrPull,
-            pistonAngle = Pistonjoint.angle,
-            pistonPushArmed = playerNet.pistonPushArmed == 1 ? true : false,
-        });
+        //playerNet.statePayloadRBuffer.Write(new StatePayload
+        //{
+        //    tick = ServerManagerNet.tick,
+        //    playerPhyState = new PhysicsState
+        //    {
+        //        position = PlayerBody.position,
+        //        rotation = PlayerBody.rotation,
+        //        linearVelocity = PlayerBody.linearVelocity,
+        //        angularVelocity = PlayerBody.angularVelocity,
+        //    },
+        //    pistonPhyState = new PhysicsState
+        //    {
+        //        position = playerNet.PistonBody.position,
+        //        rotation = playerNet.PistonBody.rotation,
+        //        linearVelocity = playerNet.PistonBody.linearVelocity,
+        //        angularVelocity = playerNet.PistonBody.angularVelocity,
+        //    },
+        //    cogPhyState = new PhysicsState
+        //    {
+        //        position = playerNet.CogBody.position,
+        //        rotation = playerNet.CogBody.rotation,
+        //        linearVelocity = playerNet.CogBody.linearVelocity,
+        //        angularVelocity = playerNet.CogBody.angularVelocity,
+        //    },
+        //    ticksTillPistonPushActivation = playerNet.ticksTillPistonPushActivation,
+        //    activeRevertCooldown = playerNet.activeRevertCooldown,
+        //    revertCooldown = playerNet.revertCooldown,
+        //    pistonPushOrPull = playerNet.pistonPushOrPull,
+        //    pistonAngle = Pistonjoint.angle,
+        //    pistonPushArmed = playerNet.pistonPushArmed == 1 ? true : false,
+        //});
 
 
         ServerManagerNet.tick++;
@@ -170,12 +165,13 @@ public class Player : MonoBehaviour
     {
         activeInputPayload.pistonPush = true;
         activeInputPayload.pistonDirection = dir;
+
     }
-    [ServerRpc]
-    public void AddPlayerForceServerRpc(Vector2 force)
-    {
-        PlayerBody.AddForce(force, ForceMode2D.Force);
-    }
+    //[ServerRpc]
+    //public void AddPlayerForceServerRpc(Vector2 force)
+    //{
+    //    PlayerBody.AddForce(force, ForceMode2D.Force);
+    //}
     //[ServerRpc]
     //public void PistonPushServerRpc(Vector2 dir)
     //{

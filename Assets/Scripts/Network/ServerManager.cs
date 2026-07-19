@@ -57,6 +57,7 @@ public class ServerManager : MonoBehaviour
 
     void FixedUpdate()
     {
+
         var playerNets = serverManagerNet.Players;
 
         uint oldestCommonPayloadTick = 67676767;
@@ -93,9 +94,9 @@ public class ServerManager : MonoBehaviour
                 if (payload.Read(0).tick <= (short)(earlyestPayloadTick - maximumTickGap))
                 {
                     Debug.Log("Inputs dropped at PLAYER " + i);
-                    var newÏnputPayloadHead = InputPayload.Default(payload.Read(0).tick);
+                    var newInputPayloadHead = InputPayload.Default(payload.Read(0).tick);
                     payload.SlideHead(-1);
-                    payload.Write(newÏnputPayloadHead);
+                    payload.Write(newInputPayloadHead);
                 }
             }
         }
@@ -131,7 +132,8 @@ public class ServerManager : MonoBehaviour
                // if (playerNet.inputPayloadRBuffer.Read(relativeTick).pistonPush) Debug.Log("jump at " + (ServerManagerNet.tick));
             }
 
-            Physics2D.Simulate(PlayerNet.gameFixedDeltaTime);
+            //Physics2D.Simulate(PlayerNet.gameFixedDeltaTime);
+            RapierWorld.PhysicsStep(PlayerNet.gameFixedDeltaTime);
         }
 
         dataDispatcher.shouldDispatch = true;
@@ -144,23 +146,22 @@ public class ServerManager : MonoBehaviour
         newPlayerNet.inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
         newPlayerNet.inputPayloadRBuffer.SlideHead(-1);
         newPlayerNet.inputPayloadRBuffer.Write(InputPayload.Default(ServerManagerNet.tick));
-        //Debug.Log(ServerManagerNet.tick);
 
-        switch (playerCount)
-        {
-            case 1:
-                newPlayerNet.gameObject.GetComponentInChildren<ObjectsStatesCollector>().playerRigidbodyStates = player1RigidbodyStates;
-                break;
-            case 2:
-                newPlayerNet.gameObject.GetComponentInChildren<ObjectsStatesCollector>().playerRigidbodyStates = player2RigidbodyStates;
-                break;
-            case 3:
-                newPlayerNet.gameObject.GetComponentInChildren<ObjectsStatesCollector>().playerRigidbodyStates = player3RigidbodyStates;
-                break;
-            case 4:
-                newPlayerNet.gameObject.GetComponentInChildren<ObjectsStatesCollector>().playerRigidbodyStates = player4RigidbodyStates;
-                break;
-        }
+        //switch (playerCount)
+        //{
+        //    case 1:
+        //        newPlayerNet.gameObject.GetComponentInChildren<ObjectsStatesCollector>().playerRigidbodyStates = player1RigidbodyStates;
+        //        break;
+        //    case 2:
+        //        newPlayerNet.gameObject.GetComponentInChildren<ObjectsStatesCollector>().playerRigidbodyStates = player2RigidbodyStates;
+        //        break;
+        //    case 3:
+        //        newPlayerNet.gameObject.GetComponentInChildren<ObjectsStatesCollector>().playerRigidbodyStates = player3RigidbodyStates;
+        //        break;
+        //    case 4:
+        //        newPlayerNet.gameObject.GetComponentInChildren<ObjectsStatesCollector>().playerRigidbodyStates = player4RigidbodyStates;
+        //        break;
+        //}
 
         serverManagerNet.SyncPlayersClientRpc(statePayloads, newPlayerNet.OwnerClientId);
 

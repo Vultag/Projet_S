@@ -91,8 +91,7 @@ public class Propeller : MonoBehaviour
             Vector2 aimTarget = mouseWorldPos - transform.position;
             float angle = Mathf.Atan2(aimTarget.y, aimTarget.x) * Mathf.Rad2Deg;
 
-            //propellerNet.transform.rotation = Quaternion.Euler(0f, 0f, angle + 90);
-            player.AddPlayerForceServerRpc(-aimTarget.normalized * 2500);
+            //player.AddPlayerForceServerRpc(-aimTarget.normalized * 2500);
             player.ConsumePowerup(PowerUps.Propeller, 0.6f);
 
             propellerNet.UpdateRotationServerRpc(angle);

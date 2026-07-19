@@ -23,38 +23,38 @@ public class ServerDataDispatcher : MonoBehaviour
             byte i = 0;
             foreach (PlayerNet playerNet in serverManagerNet.Players)
             {
-                serverManager.statePayloads[i] = new StatePayload
-                {
-                    tick = ServerManagerNet.tick,
-                    playerPhyState = new PhysicsState
-                    {
-                        position = playerNet.PlayerBody.position,
-                        rotation = playerNet.PlayerBody.rotation,
-                        linearVelocity = playerNet.PlayerBody.linearVelocity,
-                        angularVelocity = playerNet.PlayerBody.angularVelocity,
-                    },
-                    pistonPhyState = new PhysicsState
-                    {
-                        position = playerNet.PistonBody.position,
-                        rotation = playerNet.PistonBody.rotation,
-                        linearVelocity = playerNet.PistonBody.linearVelocity,
-                        angularVelocity = playerNet.PistonBody.angularVelocity,
-                    },
-                    cogPhyState = new PhysicsState
-                    {
-                        position = playerNet.CogBody.position,
-                        rotation = playerNet.CogBody.rotation,
-                        linearVelocity = playerNet.CogBody.linearVelocity,
-                        angularVelocity = playerNet.CogBody.angularVelocity,
-                    },
-                    activeRevertCooldown = playerNet.activeRevertCooldown,
-                    revertCooldown = playerNet.revertCooldown,
-                    pistonPushOrPull = playerNet.pistonPushOrPull,
-                    ticksTillPistonPushActivation = playerNet.ticksTillPistonPushActivation,
-                    pistonAngle = playerNet.Pistonjoint.angle,
-                    pistonPushArmed = playerNet.pistonPushArmed == 1 ? true : false,
-                };
-                i++;
+                //serverManager.statePayloads[i] = new StatePayload
+                //{
+                //    tick = ServerManagerNet.tick,
+                //    playerPhyState = new PhysicsState
+                //    {
+                //        position = playerNet.PlayerBody.position,
+                //        rotation = playerNet.PlayerBody.rotation,
+                //        linearVelocity = playerNet.PlayerBody.linearVelocity,
+                //        angularVelocity = playerNet.PlayerBody.angularVelocity,
+                //    },
+                //    pistonPhyState = new PhysicsState
+                //    {
+                //        position = playerNet.PistonBody.position,
+                //        rotation = playerNet.PistonBody.rotation,
+                //        linearVelocity = playerNet.PistonBody.linearVelocity,
+                //        angularVelocity = playerNet.PistonBody.angularVelocity,
+                //    },
+                //    cogPhyState = new PhysicsState
+                //    {
+                //        position = playerNet.CogBody.position,
+                //        rotation = playerNet.CogBody.rotation,
+                //        linearVelocity = playerNet.CogBody.linearVelocity,
+                //        angularVelocity = playerNet.CogBody.angularVelocity,
+                //    },
+                //    activeRevertCooldown = playerNet.activeRevertCooldown,
+                //    revertCooldown = playerNet.revertCooldown,
+                //    pistonPushOrPull = playerNet.pistonPushOrPull,
+                //    ticksTillPistonPushActivation = playerNet.ticksTillPistonPushActivation,
+                //    pistonAngle = playerNet.Pistonjoint.angle,
+                //    pistonPushArmed = playerNet.pistonPushArmed == 1 ? true : false,
+                //};
+                //i++;
             }
         }
 

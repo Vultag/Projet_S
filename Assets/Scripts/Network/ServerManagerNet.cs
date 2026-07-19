@@ -38,6 +38,7 @@ public class ServerManagerNet : NetworkBehaviour
     }
 
 
+    /// RE IMPLEMENT PASSING BODIES STATES IN THE FUTURE ?
     [ClientRpc(Delivery = RpcDelivery.Unreliable)]
     public void SendLatestDataPayloadsClientRpc(uint tick,byte rigidbodyNumber,rigidbodyState[] rigidbodyStates, StatePayload[] playersStatePayloads, ClientRpcParams rpcParams)
     {
@@ -242,7 +243,7 @@ public class ServerManagerNet : NetworkBehaviour
 
         foreach (PlayerNet player in Players)
         {
-            player.SynchronizeState();
+            player.SynchronizeWorld();
         }
 
 
@@ -276,6 +277,8 @@ public class ServerManagerNet : NetworkBehaviour
         pendingServerData = false;
         latestServerStatePayloadTick = (tick-1);
 
+
+        RapierWorld.world_store_snapshot(RapierWorld.world);
     }
 
 }

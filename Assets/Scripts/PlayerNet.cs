@@ -1,7 +1,6 @@
 using NUnit.Framework.Internal;
 using Unity.Collections;
 using Unity.Netcode;
-using Unity.VisualScripting;
 using UnityEngine;
 
 //public NetworkVariable<bool> propellerActive =
@@ -107,18 +106,16 @@ public class PlayerNet : NetworkBehaviour
     public static short PayloadRBufferSize = 512;
 
     private PowerupManager powerupManager;
-    public Rigidbody2D PlayerBody;
-    public Rigidbody2D PistonBody;
-    public Rigidbody2D CogBody;
-    public SliderJoint2D Pistonjoint;
+    public RapierBody PlayerBody;
+    public RapierBody PistonBody;
+    public RapierBody CogBody;
+    public RapierSliderJoint Pistonjoint;
     public GameObject graplingHook;
     public GameObject propeller;
     public SpriteRenderer playerIcon;
 
-    //[HideInInspector]
-    private JointMotor2D PushM;
-    //[HideInInspector]
-    private JointMotor2D PullM;
+    //private JointMotor2D PushM;
+    //private JointMotor2D PullM;
 
     [HideInInspector]
     public byte ticksTillPistonPushActivation;
@@ -130,6 +127,7 @@ public class PlayerNet : NetworkBehaviour
     public byte pistonPushArmed;
     [HideInInspector]
     public bool pistonPushOrPull;
+    public float pistonAngle;
 
     public const float gameFixedDeltaTime = 1f / 60f;
 
@@ -174,9 +172,9 @@ public class PlayerNet : NetworkBehaviour
         activePowerup.OnValueChanged += (_, v) => UpdatePowerupClientRpc(v);
 
 
-        PushM = new JointMotor2D { motorSpeed = 100, maxMotorTorque = Pistonjoint.motor.maxMotorTorque };
-        PullM = Pistonjoint.motor;
-        Physics2D.IgnoreCollision(PlayerBody.GetComponent<Collider2D>(), Pistonjoint.GetComponent<Collider2D>(), true);
+        //PushM = new JointMotor2D { motorSpeed = 100, maxMotorTorque = Pistonjoint.motor.maxMotorTorque };
+        //PullM = Pistonjoint.motor;
+        //Physics2D.IgnoreCollision(PlayerBody.GetComponent<Collider2D>(), Pistonjoint.GetComponent<Collider2D>(), true);
 
         if (IsServer)
         {
@@ -201,8 +199,9 @@ public class PlayerNet : NetworkBehaviour
     }
  
 
-    public void SynchronizeState()
+    public void SynchronizeWorld()
     {
+        RapierWorld.world_restore_snapshot(RapierWorld.world);
 
         //PlayerBody.Sleep();
         //PistonBody.Sleep();
@@ -212,22 +211,29 @@ public class PlayerNet : NetworkBehaviour
         //CogBody.WakeUp();
 
 
-        PlayerBody.position = latestServerStatePayload.playerPhyState.position;
-        PlayerBody.rotation = latestServerStatePayload.playerPhyState.rotation;
-        PlayerBody.linearVelocity = latestServerStatePayload.playerPhyState.linearVelocity;
-        PlayerBody.angularVelocity = latestServerStatePayload.playerPhyState.angularVelocity;
-        PistonBody.position = latestServerStatePayload.pistonPhyState.position;
-        PistonBody.rotation = latestServerStatePayload.pistonPhyState.rotation;
-        PistonBody.linearVelocity = latestServerStatePayload.pistonPhyState.linearVelocity;
-        PistonBody.angularVelocity = latestServerStatePayload.pistonPhyState.angularVelocity;
-        CogBody.position = latestServerStatePayload.cogPhyState.position;
-        CogBody.rotation = latestServerStatePayload.cogPhyState.rotation;
-        CogBody.linearVelocity = latestServerStatePayload.cogPhyState.linearVelocity;
-        CogBody.angularVelocity = latestServerStatePayload.cogPhyState.angularVelocity;
+
+        //var playerPhyState = RapierWorld.body_get_state(RapierWorld.world, PlayerBody.entityHandle);
+        //var pistonPhyState = RapierWorld.body_get_state(RapierWorld.world, PistonBody.entityHandle);
+        //var cogPhyState = RapierWorld.body_get_state(RapierWorld.world, CogBody.entityHandle);
+
+        //RapierWorld.set
+
+        //PlayerBody.position = latestServerStatePayload.playerPhyState.position;
+        //PlayerBody.rotation = latestServerStatePayload.playerPhyState.rotation;
+        //PlayerBody.linearVelocity = latestServerStatePayload.playerPhyState.linearVelocity;
+        //PlayerBody.angularVelocity = latestServerStatePayload.playerPhyState.angularVelocity;
+        //PistonBody.position = latestServerStatePayload.pistonPhyState.position;
+        //PistonBody.rotation = latestServerStatePayload.pistonPhyState.rotation;
+        //PistonBody.linearVelocity = latestServerStatePayload.pistonPhyState.linearVelocity;
+        //PistonBody.angularVelocity = latestServerStatePayload.pistonPhyState.angularVelocity;
+        //CogBody.position = latestServerStatePayload.cogPhyState.position;
+        //CogBody.rotation = latestServerStatePayload.cogPhyState.rotation;
+        //CogBody.linearVelocity = latestServerStatePayload.cogPhyState.linearVelocity;
+        //CogBody.angularVelocity = latestServerStatePayload.cogPhyState.angularVelocity;
         ticksTillPistonPushActivation = latestServerStatePayload.ticksTillPistonPushActivation;
         activeRevertCooldown = latestServerStatePayload.activeRevertCooldown;
         revertCooldown = latestServerStatePayload.revertCooldown;
-        Pistonjoint.motor = latestServerStatePayload.pistonPushOrPull ? PushM : PullM;
+        ////Pistonjoint.motor = latestServerStatePayload.pistonPushOrPull ? PushM : PullM;
         PistonRotate(latestServerStatePayload.pistonAngle);
         pistonPushOrPull = latestServerStatePayload.pistonPushOrPull;
         pistonPushArmed = latestServerStatePayload.pistonPushArmed ? (byte)1 : (byte)0;
@@ -297,13 +303,10 @@ public class PlayerNet : NetworkBehaviour
         if (revertCooldown == 0)
         {
 
-            Pistonjoint.motor = PullM;
-            revertCooldown = 120;
-            activeRevertCooldown = 0;
-            pistonPushOrPull = false;
+            setMotorPull();
 
             //Debug.Log("revert at index in buffer : " + ((inputPayloadRBuffer.head + relativeTick) % 512) + "   rollback : " + relativeTick + "    local tick : " + ServerManagerNet.tick + "    combined : " + (ServerManagerNet.tick + relativeTick) + "    head : " + inputPayloadRBuffer.head);
-            
+
             //Debug.Log("revert at " + (ServerManagerNet.tick + relativeTick));
             //if (IsServer) Debug.Log("revert at " + (ServerManagerNet.tick));
             //else Debug.Log("revert at " + (ServerManagerNet.tick + relativeTick));
@@ -315,32 +318,54 @@ public class PlayerNet : NetworkBehaviour
         if (ticksTillPistonPushActivation == 0)
         {
             PistonRotate(payload.pistonDirection);
-            Pistonjoint.motor = PushM;
-            activeRevertCooldown = 1;
-            pistonPushArmed = 0;
-            revertCooldown = 120;
-
+            setMotorPush();
             //Debug.Log("push at index in buffer : " + ((inputPayloadRBuffer.head + relativeTick) % 512) + "   rollback : " + relativeTick + "    local tick : " + ServerManagerNet.tick + "    combined : " + (ServerManagerNet.tick + relativeTick) + "    head : " + inputPayloadRBuffer.head);
             //Debug.Log("push at " + (ServerManagerNet.tick + relativeTick));
 
             if (payload.pistonPush == true) Debug.Log("rerzerzerze");
 
-            ticksTillPistonPushActivation = 50;
-            pistonPushOrPull = true;
         }
 
-        PlayerBody.AddTorque((3000 * -payload.direction) - (PlayerBody.angularVelocity * 2f * Mathf.Abs(payload.direction)), ForceMode2D.Force);
+        //PlayerBody.AddTorque((3000 * -payload.direction) - (PlayerBody.angularVelocity * 2f * Mathf.Abs(payload.direction)), ForceMode2D.Force);
+        var state = RapierWorld.body_get_state(RapierWorld.world,PlayerBody.entityHandle);
+        RapierWorld.AddForce(PlayerBody.entityHandle, Vector2.zero, (60 * -payload.direction) - (state.angularVelocity * 2f * Mathf.Abs(payload.direction)));
+        //RapierWorld.AddForce(PlayerBody.entityHandle,Vector2.zero, (300 * -payload.direction) - (0 * 2f * Mathf.Abs(payload.direction)));
+    }
 
+    private void setMotorPush()
+    {
+
+        //Pistonjoint.motor = PushM;
+        RapierWorld.joint_set_prismatic_motor(RapierWorld.world, Pistonjoint.handle, 2.5f, 15000, 160, 20000);
+        activeRevertCooldown = 1;
+        pistonPushArmed = 0;
+        revertCooldown = 120;
+        ticksTillPistonPushActivation = 50;
+        pistonPushOrPull = true;
+    }
+    private void setMotorPull()
+    {
+
+        //Pistonjoint.motor = PullM;
+        RapierWorld.joint_set_prismatic_motor(RapierWorld.world, Pistonjoint.handle, 0, 500, 70, 10000);
+        revertCooldown = 120;
+        activeRevertCooldown = 0;
+        pistonPushOrPull = false;
     }
 
     private void PistonRotate(Vector2 dir)
     {
         //Pistonjoint.angle = -Mathf.Atan2(dir.x, dir.y) * Mathf.Rad2Deg - 90 - PlayerBody.rotation;
-        Pistonjoint.angle = -Mathf.Atan2(dir.x, dir.y) * Mathf.Rad2Deg - 90;
+        //Pistonjoint.angle = -Mathf.Atan2(dir.x, dir.y) * Mathf.Rad2Deg - 90;
+        //RapierWorld.body_set_rotation(RapierWorld.world, CogBody.entityHandle, angle);
+        pistonAngle= -Mathf.Atan2(dir.x, dir.y);
+        RapierWorld.body_set_rotation(RapierWorld.world, CogBody.entityHandle, pistonAngle);
     }
     private void PistonRotate(float angle)
     {
-        Pistonjoint.angle = angle;
+        //Pistonjoint.angle = angle;
+        pistonAngle = angle;
+        RapierWorld.body_set_rotation(RapierWorld.world,CogBody.entityHandle, angle);
     }
     public void ProcessInputPayload(InputPayload inputPayload)
     {
@@ -416,10 +441,10 @@ public class PlayerNet : NetworkBehaviour
 
 
 
-    public void Bump(Vector2 force)
-    {
-        PlayerBody.AddForce(force, ForceMode2D.Impulse);
-    }
+    //public void Bump(Vector2 force)
+    //{
+    //    PlayerBody.AddForce(force, ForceMode2D.Impulse);
+    //}
 
 
 }

@@ -19,6 +19,9 @@ public class ClientPlayer : MonoBehaviour
 
         //playerNet.statePayloadRBuffer = new RingBuffer<StatePayload>(PlayerNet.PayloadRBufferSize);
         playerNet.inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
+        playerNet.inputPayloadRBufferTransmitor = new RingBuffer<InputPayload>(PlayerNet.PayloadTransmiotorRBufferSize);
+
+        FindFirstObjectByType<ServerManagerNet>().PromoteTickAsSynced();
 
     }
     void Update()
@@ -27,45 +30,6 @@ public class ClientPlayer : MonoBehaviour
     }
     private void FixedUpdate()
     {
-        /// NEEDS TO HAPPEN SYNCED WITH ALL IN  SYSTEM
-        ///playerNet.Reconciliation(tick);
-
-        playerNet.inputPayloadRBuffer.Write(playerNet.latestServerInputPayload);
-
         playerNet.Tick(0);
-
-        //playerNet.statePayloadRBuffer.Write(new StatePayload
-        //{
-        //    tick = tick,
-        //    playerPhyState = new PhysicsState
-        //    {
-        //        position = PlayerBody.position,
-        //        rotation = PlayerBody.rotation,
-        //        linearVelocity = PlayerBody.linearVelocity,
-        //        angularVelocity = PlayerBody.angularVelocity,
-        //    },
-        //    pistonPhyState = new PhysicsState
-        //    {
-        //        position = playerNet.PistonBody.position,
-        //        rotation = playerNet.PistonBody.rotation,
-        //        linearVelocity = playerNet.PistonBody.linearVelocity,
-        //        angularVelocity = playerNet.PistonBody.angularVelocity,
-        //    },
-        //    cogPhyState = new PhysicsState
-        //    {
-        //        position = playerNet.CogBody.position,
-        //        rotation = playerNet.CogBody.rotation,
-        //        linearVelocity = playerNet.CogBody.linearVelocity,
-        //        angularVelocity = playerNet.CogBody.angularVelocity,
-        //    },
-        //    ticksTillPistonPushActivation = playerNet.ticksTillPistonPushActivation,
-        //    activeRevertCooldown = playerNet.activeRevertCooldown,
-        //    revertCooldown = playerNet.revertCooldown,
-        //    pistonPushOrPull = playerNet.pistonPushOrPull,
-        //    pistonAngle = Pistonjoint.angle,
-        //    pistonPushArmed = playerNet.pistonPushArmed == 0 ? false : true,
-        //});
-
-        tick++;
     }
 }

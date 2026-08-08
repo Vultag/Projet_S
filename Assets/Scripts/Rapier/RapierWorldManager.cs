@@ -20,6 +20,7 @@ public class RapierWorldManager : MonoBehaviour
     private void Start()
     {
         RapierWorld.Create_world();
+        //RapierWorld.world_store_snapshot(RapierWorld.world);
         //Debug.Log(rapierWorldPtr); 
 
         //RapierWorld.PhysicsStep(1f / 60f);

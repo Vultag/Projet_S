@@ -1,6 +1,9 @@
 using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
+using Unity.Networking.Transport;
 using Unity.VisualScripting;
 using UnityEngine;
+using static UnityEngine.RuleTile.TilingRuleOutput;
 
 public class ConfigureNetwork : MonoBehaviour
 {
@@ -11,6 +14,7 @@ public class ConfigureNetwork : MonoBehaviour
     void Start()
     {
         NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+
     }
 
     void OnDestroy()
@@ -51,18 +55,34 @@ public class ConfigureNetwork : MonoBehaviour
         }
         else
         {
-            if(serverManagerGB.GetComponent<ServerManager>() != null)
+            if (serverManagerGB.GetComponent<ServerManager>() != null)
                 Destroy(serverManagerGB.GetComponent<ServerManager>());
         }
     }
 
     public void StartServer()
     {
-        NetworkManager.Singleton.StartServer();
+        var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+
+        transport.SetConnectionData(
+             "192.168.1.52",
+             7777,
+             "0.0.0.0"
+         );
+
+        bool result = NetworkManager.Singleton.StartServer();
+
+
     }
     public void JoinServer()
     {
-        NetworkManager.Singleton.StartClient();
+        var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+
+        transport.SetConnectionData(
+            "192.168.1.52",
+            7777
+        );
+        var test = NetworkManager.Singleton.StartClient();
     }
 
 }

@@ -32,4 +32,8 @@ public class RingBuffer<T>
         head = (short)((head + offset) & (PlayerNet.PayloadRBufferSize - 1));
         if (head < 0) Debug.LogError("PB");
     }
+    public T[] GetArray()
+    {
+        return buffer;
+    }
 }

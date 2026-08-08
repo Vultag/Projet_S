@@ -72,8 +72,9 @@ public class Player : MonoBehaviour
         playerNet = GetComponent<PlayerNet>();
         //Debug.Log(playerNet.NetworkObjectId);
 
-        playerNet.statePayloadRBuffer = new RingBuffer<StatePayload>(PlayerNet.PayloadRBufferSize);
+        //playerNet.statePayloadRBuffer = new RingBuffer<StatePayload>(PlayerNet.PayloadRBufferSize);
         playerNet.inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
+        playerNet.inputPayloadRBufferTransmitor = new RingBuffer<InputPayload>(PlayerNet.PayloadTransmiotorRBufferSize);
 
         var propellerS = propeller.GetComponent<Propeller>();
         var graplingS = graplingHook.GetComponent<Grapling>();
@@ -96,12 +97,11 @@ public class Player : MonoBehaviour
         serverManagerNet = FindFirstObjectByType<ServerManagerNet>(FindObjectsInactive.Include).GetComponent<ServerManagerNet>();
 
         activeInputPayload = InputPayload.Default(0);
-
+        RapierWorld.world_store_snapshot(RapierWorld.world);
     }
 
     private void FixedUpdate()
     {
-
         //if (ServerManagerNet.tick == 100) ArmJumping(Vector2.down);
 
 
@@ -110,6 +110,7 @@ public class Player : MonoBehaviour
         activeInputPayload.direction = activeDirection;
 
         playerNet.ProcessInputPayload(activeInputPayload);
+
 
         activeInputPayload.pistonPush = false;
 
@@ -120,7 +121,6 @@ public class Player : MonoBehaviour
 
         playerNet.Tick(0);
 
-        //Physics2D.Simulate(PlayerNet.gameFixedDeltaTime);
         RapierWorld.PhysicsStep(PlayerNet.gameFixedDeltaTime);
 
 

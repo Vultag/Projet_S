@@ -29,13 +29,5 @@ public class PistonManager : NetworkBehaviour
         //    pistonState = (byte)Mathf.Abs(pistonState - 1f);
         //}
     }
-    [ServerRpc]
-    public void PistonSwitchServerRpc(byte pistonState)
-    {
-        for (int i = 0; i < PistonJointList.Count; i++)
-        {
-            PistonJointList[i].motor = JoinMotors[pistonState];
-        }
-    }
 
 }

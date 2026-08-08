@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -21,8 +22,6 @@ public class ServerManager : MonoBehaviour
 
     [HideInInspector]
     public StatePayload[] statePayloads = new StatePayload[4];
-    [HideInInspector]
-    public InputPayload[] inputPayloads = new InputPayload[4];
 
     [HideInInspector]
     public PlayerRigidbodyStates player1RigidbodyStates;
@@ -35,7 +34,7 @@ public class ServerManager : MonoBehaviour
 
     private ServerManagerNet serverManagerNet;
 
-    private uint maximumTickGap = 240;
+    private uint maximumTickGap = 60;
 
     private GameManager gameManager;
     private ServerDataDispatcher dataDispatcher;
@@ -57,7 +56,6 @@ public class ServerManager : MonoBehaviour
 
     void FixedUpdate()
     {
-
         var playerNets = serverManagerNet.Players;
 
         uint oldestCommonPayloadTick = 67676767;
@@ -74,7 +72,6 @@ public class ServerManager : MonoBehaviour
             var payload = serverManagerNet.Players[i].inputPayloadRBuffer.Read(0);
             oldestCommonPayloadTick = oldestCommonPayloadTick > payload.tick ? payload.tick : oldestCommonPayloadTick;
             earlyestPayloadTick = payload.tick > earlyestPayloadTick ? payload.tick : earlyestPayloadTick;
-            inputPayloads[i] = payload;
         }
 
         /* 
@@ -82,6 +79,7 @@ public class ServerManager : MonoBehaviour
          * -> limit the number of ticks user are allowed to trail behind
          * -> cut to newer tick at the cost of the user's old inputs drop
          */
+        /// -> ADVANCE THE SIMULTATION OF THE TRAILLING PLAYER TO NOT INDER ON OTHERS ?
         {
             if ((earlyestPayloadTick - oldestCommonPayloadTick) > maximumTickGap)
             {
@@ -119,20 +117,12 @@ public class ServerManager : MonoBehaviour
             {
 
                 short leadingPayloadTickDiff = (short)(oldestCommonPayloadTick - playerNet.inputPayloadRBuffer.Read(0).tick);
-
-                var arf = (short)(ServerManagerNet.tick + leadingPayloadTickDiff);
-
-                if (leadingPayloadTickDiff > 0) Debug.Log("ezr456   " + leadingPayloadTickDiff + "   " + oldestCommonPayloadTick + "   " + earlyestPayloadTick);
-                if (leadingPayloadTickDiff != 0) Debug.Log(leadingPayloadTickDiff);
-
                 relativeTick = (short)((ServerManagerNet.tick - oldestCommonPayloadTick)+ leadingPayloadTickDiff);
-                if (relativeTick > 0) Debug.Log("5465146");
                 playerNet.Tick(relativeTick);
 
-               // if (playerNet.inputPayloadRBuffer.Read(relativeTick).pistonPush) Debug.Log("jump at " + (ServerManagerNet.tick));
+               if (playerNet.inputPayloadRBuffer.Read(relativeTick).pistonPush) Debug.Log("arm at " + (ServerManagerNet.tick));
             }
 
-            //Physics2D.Simulate(PlayerNet.gameFixedDeltaTime);
             RapierWorld.PhysicsStep(PlayerNet.gameFixedDeltaTime);
         }
 
@@ -146,6 +136,7 @@ public class ServerManager : MonoBehaviour
         newPlayerNet.inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
         newPlayerNet.inputPayloadRBuffer.SlideHead(-1);
         newPlayerNet.inputPayloadRBuffer.Write(InputPayload.Default(ServerManagerNet.tick));
+        newPlayerNet.latestInputsRecivedTick = ServerManagerNet.tick;
 
         //switch (playerCount)
         //{

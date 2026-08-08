@@ -1087,11 +1087,7 @@ MonoBehaviour:
   graplingHook: {fileID: 6910588928660676015}
   propeller: {fileID: 7280305992149219815}
   playerIcon: {fileID: 6111469343795154252}
-  ticksTillPistonPushActivation: 50
-  revertCooldown: 0
-  activeRevertCooldown: 0
-  pistonPushArmed: 0
-  pistonPushOrPull: 0
+  latestInputsRecivedTick: 0
   activePowerup:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
@@ -1104,7 +1100,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5832808260270493919}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2905e1aa95fba534389e06799183c2c3, type: 3}
   m_Name: 

@@ -4,7 +4,9 @@ using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
+using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.UIElements;
 using static UnityEngine.EventSystems.EventTrigger;
 
 public struct TransformUpdate
@@ -26,7 +28,7 @@ public struct UpdtatesCount
     public UIntPtr colision_event_count;
     public UIntPtr trigger_event_count;
 }
-public struct BodyStateFFI
+public struct BodyStateFFI : INetworkSerializable
 {
     public float x;
     public float y;
@@ -34,6 +36,15 @@ public struct BodyStateFFI
     public float velocityX;
     public float velocityY;
     public float angularVelocity;
+    public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
+    {
+        s.SerializeValue(ref x);
+        s.SerializeValue(ref y);
+        s.SerializeValue(ref rotation);
+        s.SerializeValue(ref velocityX);
+        s.SerializeValue(ref velocityY);
+        s.SerializeValue(ref angularVelocity);
+    }
 }
 public class EntityData
 {
@@ -249,6 +260,13 @@ internal static class RapierWorld
         float maxForce
     );
     [DllImport("rapier_unity")]
+    public static extern void body_set_position(
+         IntPtr world,
+         ulong bodyHandle,
+         float x,
+         float y
+      );
+    [DllImport("rapier_unity")]
     public static extern void body_set_rotation(
         IntPtr world,
         ulong bodyHandle,
@@ -267,6 +285,12 @@ internal static class RapierWorld
         IntPtr world,
         ulong handle
     );
+    [DllImport("rapier_unity")]
+    public static extern void body_set_state(
+         IntPtr world,
+         ulong handle,
+         BodyStateFFI bodyState
+     );
     [DllImport("rapier_unity")]
     public static extern void world_store_snapshot(IntPtr world);
     [DllImport("rapier_unity")]

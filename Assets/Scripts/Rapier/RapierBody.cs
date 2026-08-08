@@ -52,6 +52,5 @@ public class RapierBody : MonoBehaviour
             col_listener = col_listeners
         })) Debug.Log("coundt add " + entityHandle);
 
-
     }
 }

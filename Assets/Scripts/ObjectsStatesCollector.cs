@@ -4,6 +4,11 @@ using UnityEngine;
 
 public class ObjectsStatesCollector : MonoBehaviour
 {
+    private void Start()
+    {
+        Destroy(gameObject);
+    }
+
 
     //[HideInInspector]
     //public PlayerRigidbodyStates playerRigidbodyStates;

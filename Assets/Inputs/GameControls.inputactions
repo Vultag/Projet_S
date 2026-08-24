@@ -7,42 +7,6 @@
             "id": "3805938f-c580-44c2-b020-11e60c7aec09",
             "actions": [
                 {
-                    "name": "MouvementActivate",
-                    "type": "Button",
-                    "id": "431c4164-6793-4417-95a6-b701679c2d49",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
-                },
-                {
-                    "name": "MouvementDirection",
-                    "type": "Value",
-                    "id": "0beb79eb-91c2-4545-96b6-4ba654353b63",
-                    "expectedControlType": "Vector2",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
-                },
-                {
-                    "name": "Finger1Delta",
-                    "type": "Value",
-                    "id": "360b16a8-9b3d-4eba-bbb6-59d93a507338",
-                    "expectedControlType": "Vector2",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
-                },
-                {
-                    "name": "Finger2Delta",
-                    "type": "Value",
-                    "id": "3b7c05be-e9cb-440e-9319-6f8fa0246923",
-                    "expectedControlType": "Vector2",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
-                },
-                {
                     "name": "Finger1Press",
                     "type": "Button",
                     "id": "39df388d-d8ae-470a-99b1-bfece771003a",
@@ -52,6 +16,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "Finger1Pos",
+                    "type": "Value",
+                    "id": "360b16a8-9b3d-4eba-bbb6-59d93a507338",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
                     "name": "Finger2Press",
                     "type": "Button",
                     "id": "587a2669-9015-4611-8e7b-eb1c59efd028",
@@ -59,61 +32,48 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "Finger2Pos",
+                    "type": "Value",
+                    "id": "3b7c05be-e9cb-440e-9319-6f8fa0246923",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
                 }
             ],
             "bindings": [
                 {
                     "name": "",
-                    "id": "635d8b1f-72c8-44b7-869d-4eef2400e488",
-                    "path": "<Touchscreen>/Press",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "MouvementActivate",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "1859ad7d-2207-42d1-99de-e9c2e5ea346e",
-                    "path": "<Touchscreen>/position",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "MouvementDirection",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "a71d4d41-1f2b-49b3-a1e8-205c68c69ffb",
-                    "path": "<Touchscreen>/touch0/delta",
+                    "path": "<Touchscreen>/touch0/position",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Finger1Delta",
+                    "action": "Finger1Pos",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
                 {
                     "name": "",
                     "id": "ae6ff072-4c7d-461b-8fc9-efa67c03c00a",
-                    "path": "<Mouse>/delta",
+                    "path": "<Mouse>/position",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Finger1Delta",
+                    "action": "Finger1Pos",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
                 {
                     "name": "",
                     "id": "24111cb6-d2c3-467d-b262-d4f2f5b6d74b",
-                    "path": "<Touchscreen>/touch1/delta",
+                    "path": "<Touchscreen>/touch0/position",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Finger2Delta",
+                    "action": "Finger2Pos",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

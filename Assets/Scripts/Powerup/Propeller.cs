@@ -5,136 +5,65 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-public class Propeller : MonoBehaviour
+public class Propeller : MonoBehaviour, PowerUpInterface
 {
-    [SerializeField]
-    private InputActionAsset GameControls;
-    private InputActionMap propellerControls;
-    private InputAction firstTapPress;
-    private InputAction firstTapPos;
-    private InputAction secondTapPress;
-    private InputAction secondTapPos;
 
     //[SerializeField]
     //private GameObject Thruster;
     [SerializeField]
     private GameObject flames;
+    public RapierBody playerBody;
 
     private bool thrusting;
     private byte thrustingIndex;
     //private Vector2 thrustingDirection;
 
-    [HideInInspector]
-    public Player player;
-    [HideInInspector]
-    public PropellerNet propellerNet;
-
-    private void Awake()
+    public void RestorePowerUpState(bool OnOrOff)
     {
 
-        propellerControls = GameControls.FindActionMap("Propeller");
-        firstTapPress = propellerControls.FindAction("FirstTapPress");
-        firstTapPos = propellerControls.FindAction("FirstTapPos");
-        secondTapPress = propellerControls.FindAction("SecondTapPress");
-        secondTapPos = propellerControls.FindAction("SecondTapPos");
-        player = this.transform.parent.parent.parent.GetComponent<Player>();
-        propellerNet = this.transform.parent.GetComponent<PropellerNet>();
-
-        //propellerControls.Enable();
-        //firstTapPress.performed += ctx => TryActivate(0, ctx);
-        //secondTapPress.started += ctx => TryActivate(1, ctx);
-        //firstTapPress.canceled += ctx => TryActivate(0, ctx);
-        //secondTapPress.canceled += ctx => TryActivate(1, ctx);
     }
 
-    //public override void OnNetworkSpawn()
-    //{
-    //    if (!IsOwner)
-    //    {
-    //        this.enabled = false;
-    //        return;
-    //    }
-    //    //this.gameObject.SetActive(false);
-    //}
-    private void Start()
+    public void SavePowerUpState()
     {
 
-
     }
-    private void OnEnable()
+
+    public void PowerUpSelect()
     {
-        propellerControls.Enable();
-        firstTapPress.performed += ctx => TryActivate(0, ctx);
-        secondTapPress.started += ctx => TryActivate(1, ctx);
-        firstTapPress.canceled += ctx => TryActivate(0, ctx);
-        secondTapPress.canceled += ctx => TryActivate(1, ctx);
-        //activateTruster(true);
+        gameObject.SetActive(true);
     }
 
-    private void OnDisable()
+    public void PowerUpDeselect()
     {
-        firstTapPress.performed -= ctx => TryActivate(0, ctx);
-        secondTapPress.started -= ctx => TryActivate(1, ctx);
-        firstTapPress.canceled -= ctx => TryActivate(0, ctx);
-        secondTapPress.canceled -= ctx => TryActivate(1, ctx);
-        propellerControls.Disable();
-        //activateTruster(false);
+        gameObject.SetActive(false);
     }
 
-    private void FixedUpdate()
+    public void PowerUpEnable()
     {
-        if (thrusting)
-        {
 
-            Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(thrustingIndex == 0 ? firstTapPos.ReadValue<Vector2>() : secondTapPos.ReadValue<Vector2>());
-            mouseWorldPos.z = 0f;
-            Vector2 aimTarget = mouseWorldPos - transform.position;
-            float angle = Mathf.Atan2(aimTarget.y, aimTarget.x) * Mathf.Rad2Deg;
-
-            //player.AddPlayerForceServerRpc(-aimTarget.normalized * 2500);
-            player.ConsumePowerup(PowerUps.Propeller, 0.6f);
-
-            propellerNet.UpdateRotationServerRpc(angle);
-
-        }
     }
 
-    //public void Disable()
-    //{
-    //    activateFlames(false);
-    //    //activateTruster(false);
-    //    this.gameObject.SetActive(false);
-    //}
-
-    void TryActivate(byte index,InputAction.CallbackContext ctx)
+    public void PowerUpDisable()
     {
-        bool inProgress = ctx.ReadValue<float>() == 0 ? false : true;
-        if (thrusting && thrustingIndex!=index) return;
-        var pos = index==0?firstTapPos.ReadValue<Vector2>(): secondTapPos.ReadValue<Vector2>();
-        if (inProgress) 
-        {
-            if(!player.ui.uiRaycast.PointerOverUI(pos))
-            {
-                thrustingIndex = index;
-                thrusting = true;
-                activateFlames(true);
-            }
-        }
-        else
-        {
-            activateFlames(false);
-            thrusting = false;
-        }
+
     }
 
-    private void activateFlames(bool state)
+    public void PowerUpAim(Vector2 dir)
     {
-        propellerNet.ActivateFlamesServerRpc(state);
+        float angle = Mathf.Atan2(-dir.y, -dir.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0f, 0f, angle-90f);
+        RapierWorld.AddForce(playerBody.entityHandle, -dir.normalized *50f, 0);
     }
-    //private void activateTruster(bool state)
-    //{
-    //    //Thruster.SetActive(state);
-    //    propellerNet.ActivateThrusterClientRpc(state);
-    //}
+
+
+    public void PowerUpAction1(Vector2 delta)
+    {
+        flames.SetActive(true);
+    }
+
+    public void PowerUpAction2(Vector2 delta)
+    {
+        flames.SetActive(false);
+    }
 
 }

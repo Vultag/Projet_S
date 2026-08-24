@@ -92,7 +92,7 @@ public class ServerManager : MonoBehaviour
                 if (payload.Read(0).tick <= (short)(earlyestPayloadTick - maximumTickGap))
                 {
                     Debug.Log("Inputs dropped at PLAYER " + i);
-                    var newInputPayloadHead = InputPayload.Default(payload.Read(0).tick);
+                    var newInputPayloadHead = new InputPayload { tick = payload.Read(0).tick };
                     payload.SlideHead(-1);
                     payload.Write(newInputPayloadHead);
                 }
@@ -120,7 +120,7 @@ public class ServerManager : MonoBehaviour
                 relativeTick = (short)((ServerManagerNet.tick - oldestCommonPayloadTick)+ leadingPayloadTickDiff);
                 playerNet.Tick(relativeTick);
 
-               if (playerNet.inputPayloadRBuffer.Read(relativeTick).pistonPush) Debug.Log("arm at " + (ServerManagerNet.tick));
+                //if (playerNet.inputPayloadRBuffer.Read(relativeTick).pistonPush) Debug.Log("arm at " + (ServerManagerNet.tick));
             }
 
             RapierWorld.PhysicsStep(PlayerNet.gameFixedDeltaTime);
@@ -135,7 +135,7 @@ public class ServerManager : MonoBehaviour
         targetClientIds.Add(newPlayerNet.OwnerClientId);
         newPlayerNet.inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
         newPlayerNet.inputPayloadRBuffer.SlideHead(-1);
-        newPlayerNet.inputPayloadRBuffer.Write(InputPayload.Default(ServerManagerNet.tick));
+        newPlayerNet.inputPayloadRBuffer.Write(new InputPayload { tick = ServerManagerNet.tick});
         newPlayerNet.latestInputsRecivedTick = ServerManagerNet.tick;
 
         //switch (playerCount)

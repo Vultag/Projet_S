@@ -1,7 +1,15 @@
+using System;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+
+public enum PowerUp
+{
+    None,
+    GraplinHook,
+    Propeller
+}
 
 public class UI : MonoBehaviour
 {
@@ -35,11 +43,16 @@ public class UI : MonoBehaviour
     [SerializeField]
     private RectTransform rightjoystickRect;
 
+    [SerializeField]
+    private Slider energyBar;
+
     private InputAction mouvementActivateInput;
-    private InputAction finger1Delta;
+    private InputAction finger1Pos;
     private InputAction finger1Press;
-    private InputAction finger2Delta;
+    private InputAction finger2Pos;
     private InputAction finger2Press;
+    private byte activeFinger;
+    private bool aimAction;
 
     public InputActionAsset PlayerInputs;
 
@@ -55,27 +68,46 @@ public class UI : MonoBehaviour
     private float jumpCooldown = 1;
     private byte activeJumpCooldown = 0;
 
+    public GameObject hookDisableButton;
 
-    private void OnEnable()
-    {
-        PlayerInputs.FindActionMap("Player").Enable();
-    }
-
-    private void OnDisable()
-    {
-        PlayerInputs.FindActionMap("Player").Disable();
-    }
 
     private void Awake()
     {
         player.ui = this.GetComponent<UI>();
 
-        finger1Delta = InputSystem.actions.FindAction("Finger1Delta");
+        finger1Pos = InputSystem.actions.FindAction("Finger1Pos");
         finger1Press = InputSystem.actions.FindAction("Finger1Press");
-        finger2Delta = InputSystem.actions.FindAction("Finger2Delta");
+        finger2Pos = InputSystem.actions.FindAction("Finger2Pos");
         finger2Press = InputSystem.actions.FindAction("Finger2Press");
 
     }
+
+    private void OnEnable()
+    {
+        PlayerInputs.FindActionMap("Player").Enable();
+        finger1Press.started += ctx => ProcessPressStarted(1, ctx);
+        finger1Press.canceled += ctx => ProcessPressReleased(1, ctx);
+        finger2Press.started += ctx => ProcessPressStarted(2, ctx);
+        finger2Press.canceled += ctx => ProcessPressReleased(2, ctx);
+    }
+
+    private void OnDisable()
+    {
+        finger1Press.started -= ctx => ProcessPressStarted(1, ctx);
+        finger1Press.canceled -= ctx => ProcessPressReleased(1, ctx);
+        finger2Press.started -= ctx => ProcessPressStarted(2, ctx);
+        finger2Press.canceled -= ctx => ProcessPressReleased(2, ctx);
+
+        //if (shot)
+        //{
+        //    graplingNet.grapleActive.Value = false;
+        //    player.ConsumePowerup(PowerUps.GraplinHook, 1);
+        //    shot = false;
+        //}
+        //shootAtempt = false;
+        PlayerInputs.FindActionMap("Player").Disable();
+    }
+    
 
     private void Start()
     {
@@ -83,8 +115,28 @@ public class UI : MonoBehaviour
         uiRaycast = new UIRaycast(this.GetComponent<Canvas>());
     }
 
+    private void FixedUpdate()
+    {
+        if (aimAction)
+        {
+            //switch (playerNet.ac)
+            //{
+            //    default:
+            //        break;
+            //}
+            Vector2 aimTarget = Camera.main.ScreenToWorldPoint(activeFinger == 1 ? finger1Pos.ReadValue<Vector2>() : finger2Pos.ReadValue<Vector2>()) - transform.position;
+            player.RegisterAction(Action.Aim, aimTarget);
+        }
+    }
     private void Update()
     {
+
+        /// OPTI
+        uiRaycast.RebuildCache();
+        energyBar.value = playerNet.mechanicalState.energy / 100f;
+
+        //if (finger1Pressed) Debug.Log("pressed");
+
         //finger1HeldDelta = finger1HeldDelta * finger1Press.ReadValue<float>() + finger1Delta.ReadValue<Vector2>();
         //finger2HeldDelta = finger2HeldDelta * finger2Press.ReadValue<float>() + finger2Delta.ReadValue<Vector2>();
 
@@ -107,55 +159,85 @@ public class UI : MonoBehaviour
 
 
     }
+    public void ProcessPressStarted(byte fingerIdx, InputAction.CallbackContext ctx)
+    {
+        if (activeFinger != 0)
+            return;
+
+        var pos = fingerIdx == 1 ? finger1Pos.ReadValue<Vector2>() : finger2Pos.ReadValue<Vector2>();
 
 
-    //public void LeftJoySPressed()
-    //{
-    //    //LeftJoySFingerIdx = (byte);
-    //    Player.PistonPullServerRpc();
-    //}
-    //public void RightJoySPressed()
-    //{
-    //    RightJoySFingerIdx = (byte)(finger1Press.ReadValue<float>() + finger2Press.ReadValue<float>());
-    //    Player.PistonPullServerRpc();
-    //}
-    //public void LeftJoySReleased()
-    //{
-    //    if (activeJumpCooldown == 0)
-    //    {
-    //        LeftJoySFingerIdx = 0;
-    //        Player.tryJumping(leftjoystickDisplace.normalized);
-    //        activeJumpCooldown = 1;
-    //        leftJSImage.color = buttonIdleColor;
-    //        rightJSImage.color = buttonIdleColor;
-    //    }
-    //}
-    //public void RightJoySReleased()
-    //{
-    //    if(activeJumpCooldown == 0)
-    //    {
-    //        RightJoySFingerIdx = 0;
-    //        Player.tryJumping(rightjoystickDisplace.normalized);
-    //        activeJumpCooldown = 1;
-    //        rightJSImage.color = buttonIdleColor;
-    //        leftJSImage.color = buttonIdleColor;
-    //    }
-    //}
+        if (!uiRaycast.PointerOverUI(pos))
+        {
+            activeFinger = fingerIdx;
+
+            switch (playerNet.mechanicalState.selectedPowerUp)
+            {
+                case PowerUp.None:
+
+                    break;
+                case PowerUp.GraplinHook:
+                    aimAction = true;
+                    player.RegisterAction(Action.GraplingDetatch, Vector2.zero);
+                    break;
+                case PowerUp.Propeller:
+                    aimAction = true;
+                    player.RegisterAction(Action.PropellingStart, Vector2.zero);
+                    break;
+            }
+            return;
+        }
+    }
+    public void ProcessPressReleased(byte fingerIdx, InputAction.CallbackContext ctx)
+    {
+
+        if (activeFinger != fingerIdx)
+            return;
+
+        var pos = fingerIdx == 1 ? finger1Pos.ReadValue<Vector2>() : finger2Pos.ReadValue<Vector2>();
+        //if (!uiRaycast.PointerOverUI(pos))
+        {
+            switch (playerNet.mechanicalState.selectedPowerUp)
+            {
+                case PowerUp.None:
+
+                    break;
+                case PowerUp.GraplinHook:
+                    player.RegisterAction(Action.GraplingShoot, Camera.main.ScreenToWorldPoint(pos) - transform.position);
+                    break;
+                case PowerUp.Propeller:
+                    aimAction = false;
+                    player.RegisterAction(Action.PropellingStop, Vector2.zero);
+                    break;
+            }
+        }
+        aimAction = false;
+        activeFinger = 0;
+    }
+
+    public void SelectPowerUp(int identifier)
+    {
+        if ((int)playerNet.mechanicalState.selectedPowerUp == identifier) identifier = 0;
+        player.RegisterAction(Action.ChangeSelectedPowerUp, new Vector2(identifier, 0));
+    }
+    public void CancelPowerUp(int identifier)
+    {
+        player.RegisterAction(Action.GraplingDetatch, Vector2.zero);
+    }
 
     public void LeftDirPressed()
     {
         leftPressed = -1;
         if (rightPressed + leftPressed == 0)
         {
-            player.activeDirection = 0;
             leftDirImage.color = buttonIdleColor;
             rightDirImage.color = buttonIdleColor;
         }
         else
         {
-            player.activeDirection = -1;
             leftDirImage.color = buttonPressedColor;
         }
+        player.rollDirection = rightPressed + leftPressed;
     }
     public void LeftDirReleased()
     {
@@ -163,28 +245,23 @@ public class UI : MonoBehaviour
         leftDirImage.color = buttonIdleColor;
         if (rightPressed == 1)
         {
-            player.activeDirection = 1;
             rightDirImage.color = buttonPressedColor;
         }
-        else
-        {
-            player.activeDirection = 0;
-        }
+        player.rollDirection = rightPressed + leftPressed;
     }
     public void RightDirPressed()
     {
         rightPressed = 1;
         if (rightPressed + leftPressed == 0)
         {
-            player.activeDirection = 0;
             leftDirImage.color = buttonIdleColor;
             rightDirImage.color = buttonIdleColor;
         }
         else
         {
-            player.activeDirection = 1;
             rightDirImage.color = buttonPressedColor;
         }
+        player.rollDirection = rightPressed + leftPressed;
     }
     public void RightDirReleased()
     {
@@ -192,20 +269,9 @@ public class UI : MonoBehaviour
         rightDirImage.color = buttonIdleColor;
         if (leftPressed == 1)
         {
-            player.activeDirection = -1;
             leftDirImage.color = buttonPressedColor;
         }
-        else
-        {
-            player.activeDirection = 0;
-        }
-
-        
-
-    }
-    public void JoystickPressed()
-    {
-        //playerNet.PistonPull();
+        player.rollDirection = rightPressed + leftPressed;
     }
     public void JoystickReleased(Vector2 dir)
     {

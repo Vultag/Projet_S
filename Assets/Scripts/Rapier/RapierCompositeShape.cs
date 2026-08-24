@@ -7,7 +7,7 @@ public class RapierCompositeShape : MonoBehaviour
     [SerializeField]
     private float friction;
 
-    void Start()
+    void Awake()
     {
 
         if (!TryGetComponent<CompositeCollider2D>(out var composite)) Debug.Log("NO COMPOSITE");
@@ -24,7 +24,8 @@ public class RapierCompositeShape : MonoBehaviour
             transform.position.y,
             Mathf.Deg2Rad * transform.localEulerAngles.z,
             0,0,
-            false
+            false,
+            true
             );
 
         if (composite.pathCount != 1) Debug.Log(" PATH PROBLEM");

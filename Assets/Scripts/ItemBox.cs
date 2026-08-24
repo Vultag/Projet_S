@@ -1,24 +1,27 @@
 using Unity.Netcode;
 using UnityEngine;
 
-public class ItemBox : MonoBehaviour
+public class ItemBox : MonoBehaviour, IRapierTriggerListener
 {
     private ItemBoxSpawner itemBoxSpawner;
+
 
     private void Start()
     {
         itemBoxSpawner = transform.parent.GetComponent<ItemBoxSpawner>();
     }
 
-    private void OnTriggerEnter2D(Collider2D collision)
+
+    public void OnRapierTriggerEnter(GameObject EntityEntering, ulong EntityEnteringID)
     {
-        var player = collision.gameObject.transform.parent.GetComponent<Player>();
-        ///if (player.IsOwner)
-        {
-            player.GainPowerup((PowerUps)UnityEngine.Random.Range(1, 2));
-        }
+        Debug.Log(EntityEntering.gameObject.name);
+        var player = EntityEntering.transform.parent.GetComponent<PlayerNet>();
+        player.mechanicalState.energy += 10;
         itemBoxSpawner.spawned = 0;
         this.gameObject.SetActive(false);
     }
 
+    public void OnRapierTriggerExit(GameObject EntityExiting, ulong EntityExitingID)
+    {
+    }
 }

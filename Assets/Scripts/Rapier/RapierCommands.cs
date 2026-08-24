@@ -5,35 +5,35 @@ using Unity.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-struct CreateBodyCommand
-{
-    byte type;
-    float mass;
-    Vector2 pos;
-    float rot;
-    float linDamp;
-    float angDamp;
+//struct CreateBodyCommand
+//{
+//    byte type;
+//    float mass;
+//    Vector2 pos;
+//    float rot;
+//    float linDamp;
+//    float angDamp;
 
-    public CreateBodyCommand(byte type, float mass,Vector2 pos, float rot,float linDamp, float angDamp)
-    {
-        this.type = type;
-        this.mass = mass;
-        this.pos = pos;
-        this.rot = rot;
-        this.linDamp = linDamp;
-        this.angDamp = angDamp;
-    }
+//    public CreateBodyCommand(byte type, float mass,Vector2 pos, float rot,float linDamp, float angDamp)
+//    {
+//        this.type = type;
+//        this.mass = mass;
+//        this.pos = pos;
+//        this.rot = rot;
+//        this.linDamp = linDamp;
+//        this.angDamp = angDamp;
+//    }
 
-    public void Execute(IntPtr world)
-    {
-        RapierWorld.body_create(
-            world, type,mass, pos.x, pos.y, rot,
-            linDamp,
-            angDamp,
-            true
-        );
-    }
-}
+//    public void Execute(IntPtr world)
+//    {
+//        RapierWorld.body_create(
+//            world, type,mass, pos.x, pos.y, rot,
+//            linDamp,
+//            angDamp,
+//            true
+//        );
+//    }
+//}
 struct DestroyBodyCommand
 {
     ulong handle;

@@ -1,3 +1,4 @@
+using System;
 using NUnit.Framework.Internal;
 using Unity.Collections;
 using Unity.Netcode;
@@ -40,6 +41,21 @@ public struct MechanicsState : INetworkSerializable
     public byte pistonPushOrPull;
     public byte pistonPushArmed;
     public float pistonAngle;
+
+    public PowerUp selectedPowerUp;
+
+    //public byte powerUp1State;
+    //public byte powerUp2State;
+    //public byte powerUp3State;
+    //public byte powerUp4State;
+    //public byte powerUp5State;
+    //public byte powerUp6State;
+    //public byte powerUp7State;
+    //public byte powerUp8State;
+
+    public byte PowerUpsStates;
+
+    public float energy;
     public static MechanicsState Default()
     {
         return new MechanicsState
@@ -49,7 +65,10 @@ public struct MechanicsState : INetworkSerializable
             activeRevertCooldown = 0,
             pistonPushOrPull = 0,
             pistonPushArmed = 0,
-            pistonAngle = 0
+            pistonAngle = 0,
+            //PackedPowerUpsStates = 0,
+            //activePowerUp = 0,
+            energy = 0,
         };
     }
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -60,47 +79,61 @@ public struct MechanicsState : INetworkSerializable
         serializer.SerializeValue(ref pistonPushOrPull);
         serializer.SerializeValue(ref pistonPushArmed);
         serializer.SerializeValue(ref pistonAngle);
+
+        serializer.SerializeValue(ref selectedPowerUp);
+
+        //serializer.SerializeValue(ref powerUp1State);
+        //serializer.SerializeValue(ref powerUp2State);
+        //serializer.SerializeValue(ref powerUp3State);
+        //serializer.SerializeValue(ref powerUp4State);
+        //serializer.SerializeValue(ref powerUp5State);
+        //serializer.SerializeValue(ref powerUp6State);
+        //serializer.SerializeValue(ref powerUp7State);
+        //serializer.SerializeValue(ref powerUp8State);
+
+        serializer.SerializeValue(ref PowerUpsStates);
+
+        serializer.SerializeValue(ref energy);
     }
 }
 
-
+public enum Action // *
+{
+    None,
+    Roll,
+    Push,
+    Aim,
+    ChangeSelectedPowerUp,
+    GraplingShoot,
+    GraplingDetatch,
+    PropellingStart,
+    PropellingStop
+    /// TO DO
+}
 public struct InputPayload : INetworkSerializable
 {
     public uint tick;
-    public sbyte direction;
-    public bool pistonPush;
-    //public byte ticksTillPistonPushActivation;
-    public Vector2 pistonDirection;
-    public bool finger1press;
-    public Vector2 finger1pressPosition; 
-    public bool finger2press;
-    public Vector2 finger2pressPosition;
-    public static InputPayload Default(uint atTick)
+
+    public Action action1;
+    public Action action2;
+    public Vector2 action1Delta;
+    public Vector2 action2Delta;
+
+    public void Clear()
     {
-        return new InputPayload
-        {
-            tick = atTick,
-            direction = 0,
-            pistonPush = false,
-            //ticksTillPistonPushActivation = 50,
-            pistonDirection = Vector2.zero,
-            finger1press = false,
-            finger1pressPosition = Vector2.zero,
-            finger2press = false,
-            finger2pressPosition = Vector2.zero
-        };
+        action1 = 0;
+        action2 = 0;
+        action1Delta = Vector2.zero;
+        action2Delta = Vector2.zero;
     }
+
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref tick);
-        serializer.SerializeValue(ref direction);
-        serializer.SerializeValue(ref pistonPush);
-        //serializer.SerializeValue(ref ticksTillPistonPushActivation);
-        serializer.SerializeValue(ref pistonDirection);
-        serializer.SerializeValue(ref finger1press);
-        serializer.SerializeValue(ref finger1pressPosition);
-        serializer.SerializeValue(ref finger2press);
-        serializer.SerializeValue(ref finger2pressPosition);
+        serializer.SerializeValue(ref action1);
+        serializer.SerializeValue(ref action2);
+        serializer.SerializeValue(ref action1Delta);
+        serializer.SerializeValue(ref action2Delta);
     }
 }
 public struct StatePayload : INetworkSerializable
@@ -127,20 +160,27 @@ public class PlayerNet : NetworkBehaviour
     public static short PayloadRBufferSize = 512;
     public static short PayloadTransmiotorRBufferSize = 32;
     
-    private PowerupManager powerupManager;
     public RapierBody PlayerBody;
     public RapierBody PistonBody;
     public RapierBody CogBody;
     public RapierSliderJoint Pistonjoint;
-    public GameObject graplingHook;
-    public GameObject propeller;
+    //public GameObject graplingHook;
+    //public GameObject propeller;
     public SpriteRenderer playerIcon;
 
+    private Vector2 nextPistonPushDirection;
     //private JointMotor2D PushM;
     //private JointMotor2D PullM;
 
     [HideInInspector]
     public MechanicsState mechanicalState;
+    //[HideInInspector]
+    //public PowerUp activePowerUp;
+    [SerializeField]
+    private GameObject[] powerUpsGB;
+    [SerializeField]
+    private PowerUpInterface[] powerUps;
+
 
     public const float gameFixedDeltaTime = 1f / 60f;
 
@@ -160,13 +200,13 @@ public class PlayerNet : NetworkBehaviour
     public MechanicsState latestSyncedMechanicsStatePayload;
 
 
-    [HideInInspector]
-    public NetworkVariable<PowerUps> activePowerup =
-       new NetworkVariable<PowerUps>(
-           PowerUps.None,
-           NetworkVariableReadPermission.Everyone,
-           NetworkVariableWritePermission.Server
-       );
+    //[HideInInspector]
+    //public NetworkVariable<PowerUps> activePowerup =
+    //   new NetworkVariable<PowerUps>(
+    //       PowerUps.None,
+    //       NetworkVariableReadPermission.Everyone,
+    //       NetworkVariableWritePermission.Server
+    //   );
 
     private Player player;
     private ClientPlayer clientPlayer;
@@ -182,11 +222,15 @@ public class PlayerNet : NetworkBehaviour
         player = GetComponent<Player>();
         clientPlayer = GetComponent<ClientPlayer>();
 
-        var ui = FindFirstObjectByType<UI>(FindObjectsInactive.Include);
-        powerupManager = ui.GetComponent<PowerupManager>();
+        powerUps = new PowerUpInterface[powerUpsGB.Length];
+        for (int i = 0; i < powerUpsGB.Length; i++)
+        {
+            powerUps[i] = powerUpsGB[i].GetComponent<PowerUpInterface>();
+        }
 
-        activePowerup.OnValueChanged += (_, v) => UpdatePowerupClientRpc(v);
+        ///graplingHook = powerUps[(int)PowerUp.GraplinHook-1].ga.GetComponent<Grapling>();
 
+        //var ui = FindFirstObjectByType<UI>(FindObjectsInactive.Include);
 
         //PushM = new JointMotor2D { motorSpeed = 100, maxMotorTorque = Pistonjoint.motor.maxMotorTorque };
         //PullM = Pistonjoint.motor;
@@ -200,13 +244,11 @@ public class PlayerNet : NetworkBehaviour
         else if (IsOwner)
         {
             Destroy(clientPlayer);
-            Destroy(GetComponentInChildren<ObjectsStatesCollector>().gameObject);
         }
         else
         {
             Destroy(player);
             clientPlayer.enabled = true;
-            Destroy(GetComponentInChildren<ObjectsStatesCollector>().gameObject);
         }
 
 
@@ -214,8 +256,20 @@ public class PlayerNet : NetworkBehaviour
         //propellerActive.OnValueChanged += (_, v) => UpdatePowerupClientRpc(PowerUps.Propeller, v);
     }
 
+    public void UpdateSyncedStates()
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            powerUps[i].SavePowerUpState();
+        }
+        latestSyncedMechanicsStatePayload = latestServerStatePayload.playerMechanicsState;
+    }
     public void RestoreState(MechanicsState mechState)
     {
+
+        //if (mechanicalState.activePowerUp != mechState.activePowerUp)
+        //    ProcessAction(Action.ChangePowerUp,new Vector2((int)mechState.activePowerUp, 0));
+
         mechanicalState.ticksTillPistonPushActivation = mechState.ticksTillPistonPushActivation;
         mechanicalState.activeRevertCooldown = mechState.activeRevertCooldown;
         mechanicalState.revertCooldown = mechState.revertCooldown;
@@ -224,6 +278,14 @@ public class PlayerNet : NetworkBehaviour
         mechanicalState.pistonAngle = mechState.pistonAngle;
         mechanicalState.pistonPushOrPull = mechState.pistonPushOrPull;
         mechanicalState.pistonPushArmed = mechState.pistonPushArmed;
+        mechanicalState.selectedPowerUp = mechState.selectedPowerUp;
+        mechanicalState.energy = mechState.energy;
+        mechanicalState.PowerUpsStates = mechState.PowerUpsStates;
+
+        for (int i = 0; i < 2; i++)
+        {
+            powerUps[i].RestorePowerUpState(((mechState.PowerUpsStates >> i) & 1) == 1);
+        }
 
         if (mechanicalState.ticksTillPistonPushActivation == 0) Debug.Log("qbsdqsbqsdq");
         if (mechanicalState.revertCooldown == 0) Debug.Log("xcwcwx");
@@ -237,115 +299,72 @@ public class PlayerNet : NetworkBehaviour
         RapierWorld.body_set_state(RapierWorld.world, PistonBody.entityHandle, State.pistonPhyState);
         RapierWorld.body_set_state(RapierWorld.world, CogBody.entityHandle, State.cogPhyState);
 
-        mechanicalState.ticksTillPistonPushActivation = State.playerMechanicsState.ticksTillPistonPushActivation;
-        mechanicalState.activeRevertCooldown = State.playerMechanicsState.activeRevertCooldown;
-        mechanicalState.revertCooldown = State.playerMechanicsState.revertCooldown;
-        ////Pistonjoint.motor = latestServerStatePayload.pistonPushOrPull ? PushM : PullM;
-        //PistonRotate(State.playerMechanicsState.pistonAngle);
-        mechanicalState.pistonAngle = State.playerMechanicsState.pistonAngle;
-        mechanicalState.pistonPushOrPull = State.playerMechanicsState.pistonPushOrPull;
-        mechanicalState.pistonPushArmed = State.playerMechanicsState.pistonPushArmed;
-
-        if (mechanicalState.ticksTillPistonPushActivation == 0) Debug.Log("qbsdqsbqsdq");
-        if (mechanicalState.revertCooldown == 0) Debug.Log("xcwcwx");
+        ///RestoreState(State.playerMechanicsState);
     }
 
-
-
-    public void SynchronizeWorld()
+    private void ProcessAction(Action action, Vector2 delta)
     {
-        //PlayerBody.Sleep();
-        //PistonBody.Sleep();
-        //CogBody.Sleep();
-        //PlayerBody.WakeUp();
-        //PistonBody.WakeUp();
-        //CogBody.WakeUp();
+        switch (action)
+        {
+            case Action.None:
+                break;
+            case Action.Roll:
+                var state = RapierWorld.body_get_state(RapierWorld.world, PlayerBody.entityHandle);
+                int direction = Math.Sign(delta.x);
+                RapierWorld.AddForce(PlayerBody.entityHandle, Vector2.zero, (60 * -direction) - (state.angularVelocity * 2f * Mathf.Abs(-direction)));
+                break;
+            case Action.Push:
+                mechanicalState.pistonPushArmed = 1;
+                nextPistonPushDirection = delta;
+                break;
+            case Action.ChangeSelectedPowerUp:
 
+                PowerUp newPowerUp = (PowerUp)delta.x;
+                if (mechanicalState.selectedPowerUp != 0)
+                {
+                    powerUps[(int)mechanicalState.selectedPowerUp - 1].PowerUpDeselect();
+                }
+                if (newPowerUp != 0)
+                {
+                    powerUps[(int)newPowerUp - 1].PowerUpSelect();
+                }
+                mechanicalState.selectedPowerUp = newPowerUp;
 
+                break;
 
-        //var playerPhyState = RapierWorld.body_get_state(RapierWorld.world, PlayerBody.entityHandle);
-        //var pistonPhyState = RapierWorld.body_get_state(RapierWorld.world, PistonBody.entityHandle);
-        //var cogPhyState = RapierWorld.body_get_state(RapierWorld.world, CogBody.entityHandle);
+            case Action.Aim:
+                if(mechanicalState.selectedPowerUp>0)
+                    powerUps[(int)mechanicalState.selectedPowerUp-1].PowerUpAim(delta);
+                break;
 
-        //RapierWorld.set
+            case Action.GraplingShoot:
+                powerUps[(int)PowerUp.GraplinHook-1].PowerUpAction1(delta);
+                mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates | (1 << (byte)PowerUp.GraplinHook-1));
+                break;
+            case Action.GraplingDetatch:
+                powerUps[(int)PowerUp.GraplinHook-1].PowerUpAction2(delta);
+                mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates & ~(1 << (byte)PowerUp.GraplinHook-1));
+                break;
+            case Action.PropellingStart:
+                powerUps[(int)PowerUp.Propeller - 1].PowerUpAction1(delta);
+                break;
+            case Action.PropellingStop:
+                powerUps[(int)PowerUp.Propeller - 1].PowerUpAction2(delta);
+                break;
+        }
 
-        //PlayerBody.position = latestServerStatePayload.playerPhyState.position;
-        //PlayerBody.rotation = latestServerStatePayload.playerPhyState.rotation;
-        //PlayerBody.linearVelocity = latestServerStatePayload.playerPhyState.linearVelocity;
-        //PlayerBody.angularVelocity = latestServerStatePayload.playerPhyState.angularVelocity;
-        //PistonBody.position = latestServerStatePayload.pistonPhyState.position;
-        //PistonBody.rotation = latestServerStatePayload.pistonPhyState.rotation;
-        //PistonBody.linearVelocity = latestServerStatePayload.pistonPhyState.linearVelocity;
-        //PistonBody.angularVelocity = latestServerStatePayload.pistonPhyState.angularVelocity;
-        //CogBody.position = latestServerStatePayload.cogPhyState.position;
-        //CogBody.rotation = latestServerStatePayload.cogPhyState.rotation;
-        //CogBody.linearVelocity = latestServerStatePayload.cogPhyState.linearVelocity;
-        //CogBody.angularVelocity = latestServerStatePayload.cogPhyState.angularVelocity;
-        mechanicalState.ticksTillPistonPushActivation = latestServerStatePayload.playerMechanicsState.ticksTillPistonPushActivation;
-        mechanicalState.activeRevertCooldown = latestServerStatePayload.playerMechanicsState.activeRevertCooldown;
-        mechanicalState.revertCooldown = latestServerStatePayload.playerMechanicsState.revertCooldown;
-        ////Pistonjoint.motor = latestServerStatePayload.pistonPushOrPull ? PushM : PullM;
-        PistonRotate(latestServerStatePayload.playerMechanicsState.pistonAngle);
-        mechanicalState.pistonPushOrPull = latestServerStatePayload.playerMechanicsState.pistonPushOrPull;
-        mechanicalState.pistonPushArmed = latestServerStatePayload.playerMechanicsState.pistonPushArmed;
-
-        if (mechanicalState.ticksTillPistonPushActivation == 0) Debug.Log("qbsdqsbqsdq");
-        if (mechanicalState.revertCooldown == 0) Debug.Log("xcwcwx");
-
-        //if (pistonPushArmed == 1 & ticksTillPistonPushActivation == 49) Debug.Log("arm sync");
-        //if (pistonPushArmed == 1 & ticksTillPistonPushActivation == 50) Debug.Log("qcqscqcscqscxc");
-        //if (pistonPushArmed == 1 & ticksTillPistonPushActivation == 48) Debug.Log("wxccwx");
-        //if (pistonPushArmed == 1 & ticksTillPistonPushActivation == 0) Debug.Log("549xwcxxcw849");
-
-        //if (pistonPushArmed == 1) Debug.Log(ticksTillPistonPushActivation + "   " + latestServerStatePayload.tick + "   " + ServerManagerNet.tick);
     }
 
     public void Tick(short relativeTick)
     {
         InputPayload payload = inputPayloadRBuffer.Read(relativeTick);
 
+        mechanicalState.energy = Mathf.Min(mechanicalState.energy + 0.25f,100);
+        ProcessAction(payload.action1, payload.action1Delta);
+        ProcessAction(payload.action2, payload.action2Delta);
 
-        mechanicalState.pistonPushArmed = (mechanicalState.pistonPushArmed == 1 | payload.pistonPush == true) ? (byte)1 : (byte)0;
         mechanicalState.revertCooldown = (byte)(mechanicalState.revertCooldown - mechanicalState.activeRevertCooldown);
         mechanicalState.ticksTillPistonPushActivation = (byte)(mechanicalState.ticksTillPistonPushActivation - mechanicalState.pistonPushArmed);
-
-
-
-        if (payload.pistonPush == true)
-        {
-            //Debug.Log("arm at index in buffer : " +  ((inputPayloadRBuffer.head + relativeTick) & (PlayerNet.PayloadRBufferSize - 1)) + "   rollback : " + relativeTick + "    local tick : " + ServerManagerNet.tick + "    combined : " + (ServerManagerNet.tick+relativeTick) + "    head : " + inputPayloadRBuffer.head);
-
-            //if (IsServer) Debug.Log("arm at " + (ServerManagerNet.tick) + " angle " + Pistonjoint.angle);
-            //else
-            //    Debug.Log("arm at " + (ServerManagerNet.tick + relativeTick) + " angle " + Pistonjoint.angle);
-            //Debug.Log("arm");
-
-        }
-        //if (mechanicalState.pistonPushArmed == 1)
-        //{
-        //    Debug.Log(mechanicalState.ticksTillPistonPushActivation + " at tick " + ServerManagerNet.tick + "  combined : " + (ServerManagerNet.tick + relativeTick));
-        //}
-
-        //if(payload.pistonPush)
-        //    Debug.Log("push");
-
-        if (IsServer)
-        {
-            //if (payload.pistonPush == true)
-            //    Debug.Log("jump");
-
-            //if (payload.direction != 0)
-            //    Debug.Log(payload.direction);
-
-
-            //if (payload.direction != 0 && inputPayloadRBuffer.Read((short)(relativeTick-1)).direction == 0)
-            //    Debug.Log("start dir at " + payload.tick);
-
-
-            //if (payload.direction == 0 && inputPayloadRBuffer.Read((short)(relativeTick - 1)).direction != 0)
-            //    Debug.Log("end dir at " + payload.tick);
-
-        }
 
 
         if (mechanicalState.ticksTillPistonPushActivation > 50 | mechanicalState.ticksTillPistonPushActivation < 0) Debug.Log("bug222");
@@ -356,15 +375,6 @@ public class PlayerNet : NetworkBehaviour
 
             setMotorPull();
 
-            ////Debug.Log("revert at index in buffer : " + ((inputPayloadRBuffer.head + relativeTick) % 512) + "   rollback : " + relativeTick + "    local tick : " + ServerManagerNet.tick + "    combined : " + (ServerManagerNet.tick + relativeTick) + "    head : " + inputPayloadRBuffer.head);
-
-            //Debug.Log("revert at " + (ServerManagerNet.tick + relativeTick));
-            //if (IsServer) Debug.Log("revert at " + (ServerManagerNet.tick));
-            //else Debug.Log("revert at " + (ServerManagerNet.tick + relativeTick));
-            //Debug.Log("revert");
-
-            //if (payload.pistonPush == true) Debug.Log("sdsqdsqd");
-            //if (ticksTillPistonPushActivation == 0) Debug.Log("adzazd");
         }
         if (mechanicalState.ticksTillPistonPushActivation == 0)
         {
@@ -377,7 +387,7 @@ public class PlayerNet : NetworkBehaviour
             //newPistonState.velocityY = 0;
             //newPistonState.angularVelocity = 0;
             RapierWorld.body_set_state(RapierWorld.world, PistonBody.entityHandle, newPistonState);
-            PistonRotate(payload.pistonDirection);
+            PistonRotate(nextPistonPushDirection);
             setMotorPush();
             ////Debug.Log("push at index in buffer : " + ((inputPayloadRBuffer.head + relativeTick) % 512) + "   rollback : " + relativeTick + "    local tick : " + ServerManagerNet.tick + "    combined : " + (ServerManagerNet.tick + relativeTick) + "    head : " + inputPayloadRBuffer.head);
             //Debug.Log("push at " + (ServerManagerNet.tick + relativeTick));
@@ -385,12 +395,15 @@ public class PlayerNet : NetworkBehaviour
         }
 
         //PlayerBody.AddTorque((3000 * -payload.direction) - (PlayerBody.angularVelocity * 2f * Mathf.Abs(payload.direction)), ForceMode2D.Force);
-        var state = RapierWorld.body_get_state(RapierWorld.world,PlayerBody.entityHandle);
-        RapierWorld.AddForce(PlayerBody.entityHandle, Vector2.zero, (60 * -payload.direction) - (state.angularVelocity * 2f * Mathf.Abs(payload.direction)));
         //RapierWorld.AddForce(PlayerBody.entityHandle,Vector2.zero, (300 * -payload.direction) - (0 * 2f * Mathf.Abs(payload.direction)));
         ///if (IsServer) Debug.Log(payload.direction);
     }
 
+    public void ConsumePowerupEnergy(float quantity)
+    {
+
+        mechanicalState.energy-=quantity;
+    }
     private void setMotorPush()
     {
         //Debug.Log("aaaa");
@@ -522,68 +535,10 @@ public class PlayerNet : NetworkBehaviour
             //Debug.Log(i);
             //Debug.Log(((transmitorHead - i) + PlayerNet.PayloadTransmiotorRBufferSize) % PlayerNet.PayloadTransmiotorRBufferSize);
             inputPayloadRBuffer.Write(inputPayloadTransmitor[((transmitorHead - i)+ PlayerNet.PayloadTransmiotorRBufferSize) % PlayerNet.PayloadTransmiotorRBufferSize]);
-            if (inputPayloadRBuffer.Read(0).pistonPush) Debug.Log("push recived at " + Time.realtimeSinceStartup);
+            //if (inputPayloadRBuffer.Read(0).pistonPush) Debug.Log("push recived at " + Time.realtimeSinceStartup);
         }
         latestInputsRecivedTick = tick;
     }
-
-    [ClientRpc]
-    private void UpdatePowerupClientRpc(PowerUps powerup)
-    {
-        //player.UpdatePowerupLocal(powerup);
-        switch (powerupManager.activePowerup)
-        {
-            case PowerUps.GraplinHook:
-                graplingHook.SetActive(false);
-                break;
-            case PowerUps.Propeller:
-                propeller.SetActive(false);
-                break;
-
-
-
-            default:
-                break;
-        }
-
-        /// handled beforehand
-        //if (powerupManager.activePowerup == powerup) return;
-
-        switch (powerup)
-        {
-            case PowerUps.GraplinHook:
-                graplingHook.SetActive(true);
-                break;
-            case PowerUps.Propeller:
-                propeller.SetActive(true);
-                break;
-
-
-
-            default:
-                break;
-        }
-    }
-    [ServerRpc]
-    public void UpdatePowerupServerRpc(PowerUps powerup)
-    {
-        activePowerup.Value = powerup;
-        //switch (powerup)
-        //{
-        //    case PowerUps.GraplinHook:
-        //        graplingHookActive.Value = state;
-        //        break;
-        //    case PowerUps.Propeller:
-        //        propellerActive.Value = state;
-        //        break;
-
-
-
-        //    default:
-        //        break;
-        //}
-    }
-
 
 
 

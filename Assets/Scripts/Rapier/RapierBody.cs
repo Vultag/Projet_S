@@ -29,8 +29,10 @@ public class RapierBody : MonoBehaviour
 
     [SerializeField]
     bool FreezeRotation;
+    [SerializeField]
+    bool isEnabled = true;
 
-    void Start()
+    void Awake()
     {
         entityHandle = RapierWorld.body_create(
             RapierWorld.world, 
@@ -40,7 +42,8 @@ public class RapierBody : MonoBehaviour
             Mathf.Deg2Rad*transform.localEulerAngles.z,
             LinearDampening,
             AngularDampening,
-            FreezeRotation
+            FreezeRotation,
+            isEnabled
             );
 
         var col_listeners = GetComponents<IRapierCollisionListener>();
@@ -52,5 +55,19 @@ public class RapierBody : MonoBehaviour
             col_listener = col_listeners
         })) Debug.Log("coundt add " + entityHandle);
 
+        transform.SetParent(null);
+
+        ///RapierWorld.body_set_enabled(RapierWorld.world,entityHandle,isActiveAndEnabled);
+
     }
+
+    //private void OnEnable()
+    //{
+    //    RapierWorld.body_set_enabled(RapierWorld.world, entityHandle, true);
+    //}
+    //private void OnDisable()
+    //{
+    //    RapierWorld.body_set_enabled(RapierWorld.world, entityHandle, false);
+    //}
+
 }

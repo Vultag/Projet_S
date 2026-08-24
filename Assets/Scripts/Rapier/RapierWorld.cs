@@ -6,8 +6,6 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.UIElements;
-using static UnityEngine.EventSystems.EventTrigger;
 
 public struct TransformUpdate
 {
@@ -64,17 +62,18 @@ internal static class RapierWorld
     static public Dictionary<ulong, EntityData> unityToRapierEntityMap = new(512);
 
     static NativeArray<TransformUpdate> TransformUpdates;
+    static UInt32 trans_lenght;
     static NativeArray<ColTrigEvent> CollisionEvents;
     static NativeArray<ColTrigEvent> TiggerEvents;
 
     static Queue<ApplyForceCommand> ApplyForceCommands = new(32);
-    static Queue<CreateBodyCommand> CreateBodyCommands = new(16);
+    ///static Queue<CreateBodyCommand> CreateBodyCommands = new(16);
     static Queue<DestroyBodyCommand> DestroyBodyCommands = new(16);
     /// Remove, get instead
     static Queue<CreateShapeCommand> CreateShapeCommands = new(16);
 
-    public static void CreateBody(byte type,float mass,Vector2 pos, float rot,float linDamp,float angDamp)
-        => CreateBodyCommands.Enqueue(new CreateBodyCommand(type,mass,pos,rot,linDamp,angDamp));
+    //public static void CreateBody(byte type,float mass,Vector2 pos, float rot,float linDamp,float angDamp)
+    //    => CreateBodyCommands.Enqueue(new CreateBodyCommand(type,mass,pos,rot,linDamp,angDamp));
 
     public static void DestroyBody(ulong handle)
         => DestroyBodyCommands.Enqueue(new DestroyBodyCommand(handle));
@@ -123,13 +122,35 @@ internal static class RapierWorld
           float rot,
           float linearDamp,
           float angularDamp,
-          bool freezeRotation
+          bool freezeRotation,
+          bool enabled
       );
     [DllImport("rapier_unity")]
     public static extern void body_destroy(
           IntPtr world,
           ulong handle
      );
+    [DllImport("rapier_unity")]
+    public static extern void body_set_enabled(
+         IntPtr world,
+         ulong bodyHandle,
+         bool enabled
+     );
+    [DllImport("rapier_unity")]
+    public static extern void shape_set_enabled(
+        IntPtr world,
+        ulong shapeHandle,
+        bool enabled
+    );
+    [DllImport("rapier_unity")]
+    public static extern void joint_destroy(
+        IntPtr world,
+        ulong handle
+    );
+ 
+
+
+
     [DllImport("rapier_unity")]
     public static extern void body_add_circle_collider(
           IntPtr world,
@@ -183,6 +204,42 @@ internal static class RapierWorld
         UIntPtr vertexCount,
          float friction
     );
+
+
+
+    [DllImport("rapier_unity")]
+    public static extern ulong joint_add_fixed(
+        IntPtr world,
+        ulong body1,
+        ulong body2,
+        bool enableCollision,
+        bool connectedToWorld,
+        float ax1,
+        float ay1,
+        float ax2,
+        float ay2,
+        bool enabled
+    );
+    [DllImport("rapier_unity")]
+    public static extern ulong joint_add_rope(
+        IntPtr world,
+        ulong body1,
+        ulong body2,
+        bool enableCollision,
+        bool connectedToWorld,
+        float ax1,
+        float ay1,
+        float ax2,
+        float ay2,
+        float maxDistance,
+        bool enabled
+    );
+    [DllImport("rapier_unity")]
+    public static extern void joint_set_rope_max_distance(
+        IntPtr world,
+        ulong jointHandle,
+        float maxDistance
+    );
     [DllImport("rapier_unity")]
     public static extern ulong joint_add_revolute(
        IntPtr world,
@@ -209,7 +266,8 @@ internal static class RapierWorld
        float velocityTarget,
        float velocityGain,
 
-       float maxTorque
+       float maxTorque,
+        bool enabled
    );
     [DllImport("rapier_unity")]
     public static extern ulong joint_add_prismatic(
@@ -236,11 +294,9 @@ internal static class RapierWorld
         float targetPosition,
         float stiffness,
         float damping,
-        float maxForce
+        float maxForce,
+        bool enabled
     );
-
-
-
     //[DllImport("rapier_unity")]
     //internal static extern ulong joint_change_prismatic(
     //    IntPtr world,
@@ -260,6 +316,15 @@ internal static class RapierWorld
         float maxForce
     );
     [DllImport("rapier_unity")]
+    public static extern void joint_set_enabled(
+        IntPtr world,
+        ulong jointHandle,
+        bool enabled
+    );
+
+
+
+    [DllImport("rapier_unity")]
     public static extern void body_set_position(
          IntPtr world,
          ulong bodyHandle,
@@ -272,6 +337,18 @@ internal static class RapierWorld
         ulong bodyHandle,
         float angle
      );
+    [DllImport("rapier_unity")]
+    public static extern void body_set_fixed(
+       IntPtr world,
+       ulong bodyHandle
+    );
+    [DllImport("rapier_unity")]
+    public static extern void body_set_dynamic(
+       IntPtr world,
+       ulong bodyHandle
+    );
+
+
     [DllImport("rapier_unity")]
     public static extern void body_add_force(
         IntPtr world,
@@ -349,10 +426,10 @@ internal static class RapierWorld
         {
             DestroyBodyCommands.Dequeue().Execute(world);
         }
-        while (CreateBodyCommands.Count > 0)
-        {
-            CreateBodyCommands.Dequeue().Execute(world);
-        }
+        //while (CreateBodyCommands.Count > 0)
+        //{
+        //    CreateBodyCommands.Dequeue().Execute(world);
+        //}
         /// Remove
         while (CreateShapeCommands.Count > 0)
         {
@@ -368,7 +445,6 @@ internal static class RapierWorld
         //    Debug.Log(item.Key);
         //}
 
-
         UpdtatesCount UpdateNum = world_step(
             world,
             dt,
@@ -380,37 +456,48 @@ internal static class RapierWorld
             (UIntPtr)TiggerEvents.Length
             );
 
-        var trans_lenght = UpdateNum.trans_count.ToUInt32();
+        //var trans_lenght = UpdateNum.trans_count.ToUInt32();
+        trans_lenght = UpdateNum.trans_count.ToUInt32();
         var col_event_lenght = UpdateNum.colision_event_count.ToUInt32();
         var trig_event_lenght = UpdateNum.trigger_event_count.ToUInt32();
         //Debug.Log(transUpdateNum);
 
-        for (int i = 0; i < trans_lenght; i++)
-        {
-            if(!RapierWorld.unityToRapierEntityMap.TryGetValue(TransformUpdates[i].EntityId, out var body))Debug.Log("couldnt get body " + TransformUpdates[i].EntityId);
-            body.Transform.position = new Vector3(TransformUpdates[i].Position.x, TransformUpdates[i].Position.y, 0);
-            body.Transform.rotation = quaternion.RotateZ(TransformUpdates[i].Rotation);
-        }
+        //for (int i = 0; i < trans_lenght; i++)
+        //{
+        //    if(!RapierWorld.unityToRapierEntityMap.TryGetValue(TransformUpdates[i].EntityId, out var body))Debug.Log("couldnt get body " + TransformUpdates[i].EntityId);
+        //    body.Transform.position = new Vector3(TransformUpdates[i].Position.x, TransformUpdates[i].Position.y, 0);
+        //    body.Transform.rotation = quaternion.RotateZ(TransformUpdates[i].Rotation);
+        //}
+
         for (int i = 0; i < col_event_lenght; i++)
         {
-            Debug.Log("xcw");
 
-            if (!RapierWorld.unityToRapierEntityMap.TryGetValue(CollisionEvents[i].EntityA, out var bodyA)) Debug.Log("couldnt get A body " + CollisionEvents[i].EntityA);
-            if (!RapierWorld.unityToRapierEntityMap.TryGetValue(CollisionEvents[i].EntityB, out var bodyB)) Debug.Log("couldnt get B body " + CollisionEvents[i].EntityB);
+            if (!RapierWorld.unityToRapierEntityMap.TryGetValue(CollisionEvents[i].EntityA, out var entityA)) Debug.Log("couldnt get A entity " + CollisionEvents[i].EntityA);
+            if (!RapierWorld.unityToRapierEntityMap.TryGetValue(CollisionEvents[i].EntityB, out var entityB)) Debug.Log("couldnt get B entity " + CollisionEvents[i].EntityB);
 
-            foreach (var l in bodyA.col_listener)
-                l.OnRapierCollisionEnter(CollisionEvents[i].EntityA, CollisionEvents[i].EntityB);
-            foreach (var l in bodyB.col_listener)
-                l.OnRapierCollisionEnter(CollisionEvents[i].EntityB, CollisionEvents[i].EntityA);
+            foreach (var l in entityA.col_listener)
+                l.OnRapierCollisionEnter(CollisionEvents[i].EntityB);
+            foreach (var l in entityB.col_listener)
+                l.OnRapierCollisionEnter(CollisionEvents[i].EntityA);
 
         }
         for (int i = 0; i < trig_event_lenght; i++)
         {
-            if (!RapierWorld.unityToRapierEntityMap.TryGetValue(TiggerEvents[i].EntityA, out var shapeA)) Debug.Log("couldnt get A shape " + TiggerEvents[i].EntityA);
-         
-            foreach (var l in shapeA.trig_listener)
-                l.OnRapierTriggerEnter(TiggerEvents[i].EntityA, TiggerEvents[i].EntityB);
+            if (!RapierWorld.unityToRapierEntityMap.TryGetValue(TiggerEvents[i].EntityA, out var entityA)) Debug.Log("couldnt get A entity " + TiggerEvents[i].EntityA);
+            if (!RapierWorld.unityToRapierEntityMap.TryGetValue(TiggerEvents[i].EntityB, out var entityB)) Debug.Log("couldnt get B entity " + TiggerEvents[i].EntityA);
 
+            foreach (var l in entityA.trig_listener)
+                l.OnRapierTriggerEnter(entityB.GameObject, TiggerEvents[i].EntityB);
+
+        }
+    }
+
+    public static unsafe void UpdateTransforms()
+    {
+        for (int i = 0; i < trans_lenght; i++)
+        {
+            if (!RapierWorld.unityToRapierEntityMap.TryGetValue(TransformUpdates[i].EntityId, out var body)) Debug.Log("couldnt get body " + TransformUpdates[i].EntityId);
+            body.Transform.SetPositionAndRotation(new Vector3(TransformUpdates[i].Position.x, TransformUpdates[i].Position.y, 0), quaternion.RotateZ(TransformUpdates[i].Rotation));
         }
     }
 }

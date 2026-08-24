@@ -55,15 +55,7 @@ public class ServerDataDispatcher : MonoBehaviour
                     //    linearVelocity = playerNet.CogBody.linearVelocity,
                     //    angularVelocity = playerNet.CogBody.angularVelocity,
                     //},
-                    playerMechanicsState = new MechanicsState
-                    {
-                        activeRevertCooldown = playerNet.mechanicalState.activeRevertCooldown,
-                        revertCooldown = playerNet.mechanicalState.revertCooldown,
-                        pistonPushOrPull = playerNet.mechanicalState.pistonPushOrPull,
-                        ticksTillPistonPushActivation = playerNet.mechanicalState.ticksTillPistonPushActivation,
-                        pistonAngle = playerNet.mechanicalState.pistonAngle,
-                        pistonPushArmed = playerNet.mechanicalState.pistonPushArmed,
-                    }
+                    playerMechanicsState = playerNet.mechanicalState
                 };
                 i++;
             }

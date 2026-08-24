@@ -344,7 +344,7 @@ public class ServerManagerNet : NetworkBehaviour
         {
             player.RestoreState(player.latestServerStatePayload);
             if (player.latestServerStatePayload.playerMechanicsState.ticksTillPistonPushActivation != player.mechanicalState.ticksTillPistonPushActivation) Debug.LogError("ccccccccc");
-            player.latestSyncedMechanicsStatePayload = player.latestServerStatePayload.playerMechanicsState;
+            player.UpdateSyncedStates();
         }
         RapierWorld.world_store_snapshot(RapierWorld.world);
         ///Debug.Log("HALTED AT " + latestServerStatePayloadTick);

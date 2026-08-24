@@ -49,9 +49,11 @@ public class RapierSliderJoint : MonoBehaviour
 
     [SerializeField]
     private float maxForce = 1000f;
+    [SerializeField]
+    bool startEnabled = true;
 
 
-    private void Start()
+    private void Awake()
     {
 
         if (!TryGetComponent<RapierBody>(out var body)) Debug.Log("NO BODY ON JOINT");
@@ -82,9 +84,20 @@ public class RapierSliderJoint : MonoBehaviour
             damping,
             //velocityTarget,
             //velocityGain,
-            maxForce
+            maxForce,
+            startEnabled
         );
+
     }
+
+    //private void OnEnable()
+    //{
+    //    RapierWorld.joint_set_enabled(RapierWorld.world, handle, true);
+    //}
+    //private void OnDisable()
+    //{
+    //    RapierWorld.joint_set_enabled(RapierWorld.world, handle, false);
+    //}
 
     //public void remplaceJoint(
     //    float axisX,

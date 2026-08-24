@@ -149,7 +149,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 713069807
+  GlobalObjectIdHash: 2564268604
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -888,7 +888,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 172462620
+  GlobalObjectIdHash: 804957964
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1420,7 +1420,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2855239124
+  GlobalObjectIdHash: 3359564800
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1509,6 +1509,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2076182748394026342, guid: dc4629787d1da944c9f6929bc7cb3d45, type: 3}
+      propertyPath: isEnabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2460859048937247174, guid: dc4629787d1da944c9f6929bc7cb3d45, type: 3}
       propertyPath: m_Name
       value: ModuleBounds
@@ -1533,9 +1537,29 @@ PrefabInstance:
       propertyPath: friction
       value: 0.5
       objectReference: {fileID: 0}
+    - target: {fileID: 5250262299613477064, guid: dc4629787d1da944c9f6929bc7cb3d45, type: 3}
+      propertyPath: isEnabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5459716181543879156, guid: dc4629787d1da944c9f6929bc7cb3d45, type: 3}
+      propertyPath: isEnabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6006971824113940002, guid: dc4629787d1da944c9f6929bc7cb3d45, type: 3}
+      propertyPath: isEnabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7571806771500399075, guid: dc4629787d1da944c9f6929bc7cb3d45, type: 3}
+      propertyPath: isEnabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8666071936450264097, guid: dc4629787d1da944c9f6929bc7cb3d45, type: 3}
       propertyPath: friction
       value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8766644581069264630, guid: dc4629787d1da944c9f6929bc7cb3d45, type: 3}
+      propertyPath: isEnabled
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

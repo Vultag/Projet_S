@@ -1,7 +1,5 @@
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.UIElements;
-using static UnityEngine.LowLevelPhysics2D.PhysicsShape;
 
 public class RapierBoxShape : MonoBehaviour
 {
@@ -15,21 +13,18 @@ public class RapierBoxShape : MonoBehaviour
     private float friction;
 
 
-    void Start()
+    void Awake()
     {
         if (TryGetComponent<RapierBody>(out var rb))
         {
             var col_listeners = rb.GetComponents<IRapierCollisionListener>();
-            bool collision_listen = false;
-            foreach (var listener in col_listeners)
-            {
-                if (listener is MonoBehaviour mono && mono.isActiveAndEnabled)
-                {
-                    collision_listen = true;
-                    break;
-                }
-            }
-            RapierWorld.body_add_box_collider(RapierWorld.world, rb.entityHandle, dimentions.x/2f, dimentions.y / 2f, 0, 0, friction, (byte)gameObject.layer, collision_listen);
+
+            RapierWorld.body_add_box_collider(
+                RapierWorld.world, rb.entityHandle
+                , dimentions.x/2f, dimentions.y / 2f, 0, 0, friction, 
+                (byte)gameObject.layer,
+                col_listeners.Length > 0
+                );
         }
         else
         {
@@ -63,7 +58,18 @@ public class RapierBoxShape : MonoBehaviour
             })) Debug.Log("coundt add " + entityHandle);
 
         }
+
+        RapierWorld.shape_set_enabled(RapierWorld.world, entityHandle, isActiveAndEnabled);
     }
+
+    //private void OnEnable()
+    //{
+    //    RapierWorld.shape_set_enabled(RapierWorld.world, entityHandle, true);
+    //}
+    //private void OnDisable()
+    //{
+    //    RapierWorld.shape_set_enabled(RapierWorld.world, entityHandle, false);
+    //}
 
     private void OnDrawGizmos()
     {

@@ -33,7 +33,7 @@ public class ConfigureNetwork : MonoBehaviour
             serverManagerGB.GetComponent<ServerManagerNet>().Players.Add(playerObj.GetComponent<PlayerNet>());
             int playerCount = serverManagerGB.GetComponent<ServerManagerNet>().Players.Count;
             serverManagerGB.GetComponent<ServerManager>().playerJoin(playerCount,playerObj.GetComponent<PlayerNet>());
-            playerObj.GetComponentInChildren<ObjectsStatesCollector>().enabled = true;
+            ///playerObj.GetComponentInChildren<ObjectsStatesCollector>().enabled = true;
             Color playerColor = Color.white;
             switch (playerCount)
             {

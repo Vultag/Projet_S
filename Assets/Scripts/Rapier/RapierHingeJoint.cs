@@ -43,8 +43,11 @@ public class RapierHingeJoint : MonoBehaviour
     [SerializeField]
     private float maxTorque = 1000f;
 
+    [SerializeField]
+    bool startEnabled = true;
 
-    void Start()
+
+    void Awake()
     {
         if (!TryGetComponent<RapierBody>(out var body)) Debug.Log("NO BODY ON JOINT");
         bool connectedToWorld = connectedBody == null;
@@ -70,10 +73,22 @@ public class RapierHingeJoint : MonoBehaviour
                 damping,
                 velocityTarget,
                 velocityGain,
-                maxTorque
+                maxTorque,
+                startEnabled
             );
 
     }
+
+    //private void OnEnable()
+    //{
+    //    RapierWorld.joint_set_enabled(RapierWorld.world,handle,true);
+    //}
+    //private void OnDisable()
+    //{
+    //    RapierWorld.joint_set_enabled(RapierWorld.world, handle, false);
+    //}
+
+
 }
 
 #region EDITOR

@@ -3,6 +3,6 @@ using UnityEngine;
 public interface IRapierTriggerListener
 {
 
-    void OnRapierTriggerEnter(ulong HandleEntered, ulong HandleEntering);
-    void OnRapierTriggerExit(ulong HandleExited, ulong HandleExiting);
+    void OnRapierTriggerEnter(GameObject EntityEntering,ulong EntityEnteringID);
+    void OnRapierTriggerExit(GameObject EntityExiting, ulong EntityExitingID);
 }

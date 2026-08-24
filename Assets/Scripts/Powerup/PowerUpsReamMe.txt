@@ -1,0 +1,50 @@
+
+
+	8 PowerUps:
+	
+		4 Utility.
+			2 Mobility (energy) ?
+			2 Defesive (charges) ?
+		4 Offensive.
+			2 passive (energy) ?
+			2 active (charges) ?
+
+	LATER:
+	(Tech tree modifier for each that modify their behavior)
+	1 Ultimate (charges with damage/team contribution) ?
+
+	Utility PowerUps List:
+
+		Mobility:
+			- Grappling hook.
+			- Propeller. (thruster)
+			- Sticky foam. (stick to surface hit)
+			- Anti-gravity module. (levitate)
+			- ...
+		Defensive:
+			- Nano repair bot (link to ally player to restore HP)
+			- Plasma barrier (parabola that reflect projectile)
+			- Metamaterial coating (invisibility)
+			- EMP launcher (grenade launcher that disable movement/abilities)
+			- Smoke emitter
+			- ...
+		
+
+	Offensive PowerUps List:
+
+		Passive:
+			- Auto turret. (automaticly shoot enemies within range)
+			- War flail (ball trailling behind the player body, deal damage on impact)
+			- Spiked piston (piston deals damage on enemy impact)
+		Active:
+			- Plasma gun (rifle with bouning projectile)
+			- Grenade launcher
+			- Guided missile lancher
+			- Flame thrower
+			- ...
+
+	Ultimates :
+		- Micro-Singularity canon (shoot a black hole that sucks up and destroy any player)
+		- Nanobot swarm (repair all allies in the vicinity)
+		- ...
+	

@@ -4,6 +4,7 @@ using System.Globalization;
 using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -11,7 +12,6 @@ public class Player : MonoBehaviour
 {
     [HideInInspector]
     public UI ui;
-    private PowerupManager powerupManager;
     private ServerManagerNet serverManagerNet;
 
     private PlayerNet playerNet;
@@ -31,13 +31,11 @@ public class Player : MonoBehaviour
     private InputAction finger2Delta;
     private InputAction finger2Press;
 
-    [HideInInspector]
-    public sbyte activeDirection;
+    //[HideInInspector]
+    //public sbyte activeDirection;
 
     [HideInInspector]
     public Vector2 respawnPoint;
-    public GameObject graplingHook;
-    public GameObject propeller;
 
     [SerializeField]
     private GameObject leftjoystickParent;
@@ -53,7 +51,16 @@ public class Player : MonoBehaviour
     private Vector2 rightJumpForceArmed;
     private Vector2 leftJumpForceArmed;
 
-    private InputPayload activeInputPayload;
+    [HideInInspector]
+    public InputPayload activeInputPayload;
+    [HideInInspector]
+    public byte actionNumThisFrame;
+    [HideInInspector]
+    public float rollDirection;
+
+    [SerializeField]
+    private GameObject hookGB;
+
 
     private GameManager gameManager;
 
@@ -72,20 +79,23 @@ public class Player : MonoBehaviour
         playerNet = GetComponent<PlayerNet>();
         //Debug.Log(playerNet.NetworkObjectId);
 
-        //playerNet.statePayloadRBuffer = new RingBuffer<StatePayload>(PlayerNet.PayloadRBufferSize);
-        playerNet.inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
-        playerNet.inputPayloadRBufferTransmitor = new RingBuffer<InputPayload>(PlayerNet.PayloadTransmiotorRBufferSize);
 
-        var propellerS = propeller.GetComponent<Propeller>();
-        var graplingS = graplingHook.GetComponent<Grapling>();
-        /// remplace by active powerup from manager network var
-        propellerS.enabled = true;
-        graplingS.enabled = true;
+        playerNet.inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
+        //for (int i = 0; i < PlayerNet.PayloadRBufferSize; i++)
+        //{
+        //    playerNet.inputPayloadRBuffer.Write(new InputPayload(0));
+        //}
+        playerNet.inputPayloadRBufferTransmitor = new RingBuffer<InputPayload>(PlayerNet.PayloadTransmiotorRBufferSize);
+        //for (int i = 0; i < PlayerNet.PayloadTransmiotorRBufferSize; i++)
+        //{
+        //    playerNet.inputPayloadRBuffer.Write(new InputPayload(0));
+        //}
 
         var ui = FindFirstObjectByType<UI>(FindObjectsInactive.Include);
-        powerupManager = ui.GetComponent<PowerupManager>();
         ui.player = this;
         ui.playerNet = GetComponent<PlayerNet>();
+        var hookUiLink =hookGB.AddComponent<HookUiLink>();
+        hookUiLink.UiButton = ui.hookDisableButton;
 
         gameManager = FindFirstObjectByType<GameManager>(FindObjectsInactive.Include);
 
@@ -96,26 +106,31 @@ public class Player : MonoBehaviour
 
         serverManagerNet = FindFirstObjectByType<ServerManagerNet>(FindObjectsInactive.Include).GetComponent<ServerManagerNet>();
 
-        activeInputPayload = InputPayload.Default(0);
+        ///activeInputPayload = InputPayload.Default(0);
         RapierWorld.world_store_snapshot(RapierWorld.world);
+
+       // RapierWorld.PhysicsStep(1/60f);
+
     }
 
     private void FixedUpdate()
     {
         //if (ServerManagerNet.tick == 100) ArmJumping(Vector2.down);
 
-
         activeInputPayload.tick = ServerManagerNet.tick;
 
-        activeInputPayload.direction = activeDirection;
+        if(rollDirection !=0)
+            RegisterAction(Action.Roll, new Vector2(rollDirection, 0));
 
         playerNet.ProcessInputPayload(activeInputPayload);
 
-
-        activeInputPayload.pistonPush = false;
-
-
         serverManagerNet.Reconciliation();
+
+
+        if (actionNumThisFrame > 2)
+        {
+            Debug.Break();
+        }
 
         gameManager.Tick(ServerManagerNet.tick);
 
@@ -157,15 +172,31 @@ public class Player : MonoBehaviour
         //    pistonPushArmed = playerNet.pistonPushArmed == 1 ? true : false,
         //});
 
-
         ServerManagerNet.tick++;
+        activeInputPayload.Clear();
+        actionNumThisFrame = 0;
+    }
+
+    public void RegisterAction(Action action, Vector2 delta)
+    {
+        switch (actionNumThisFrame)
+        {
+            case 0:
+                activeInputPayload.action1 = action;
+                activeInputPayload.action1Delta = delta;
+                break;
+            case 1:
+                activeInputPayload.action2 = action;
+                activeInputPayload.action2Delta = delta;
+                break;
+        }
+        actionNumThisFrame++;
+
     }
 
     public void ArmJumping(Vector2 dir)
     {
-        activeInputPayload.pistonPush = true;
-        activeInputPayload.pistonDirection = dir;
-
+        RegisterAction(Action.Push, dir);
     }
     //[ServerRpc]
     //public void AddPlayerForceServerRpc(Vector2 force)
@@ -184,7 +215,7 @@ public class Player : MonoBehaviour
     //{
     //    Pistonjoint.motor = PullM;
     //}
-   
+
 
     public void Respawn()
     {
@@ -205,15 +236,8 @@ public class Player : MonoBehaviour
     //{
     //    ui.GetComponent<PowerupManager>().ActivatePowerup(0);
     //}
-    public void GainPowerup(PowerUps powerup)
-    {
-        powerupManager.AddPowerup(powerup);
-    }
-    public void ConsumePowerup(PowerUps powerup, float quantity)
-    {
-        powerupManager.ConsumePowerup(powerup, quantity);
-    }
   
+
 
     //public void UpdatePowerupWithNetwork(PowerUps powerup, bool state)
     //{
@@ -255,25 +279,6 @@ public class Player : MonoBehaviour
     //            break;
     //    }
     //}
-  
 
-    //public void EnablePowerup(PowerUps powerup, bool state)
-    //{
-    //    //switch (powerup)
-    //    //{
-    //    //    case PowerUps.GraplinHook:
-    //    //        graplingHook.SetActive(state);
-    //    //        break;
-    //    //    case PowerUps.Propeller:
-    //    //        propeller.SetActive(state);
-    //    //        break;
-
-
-
-    //    //    default:
-    //    //        break;
-    //    //}
-    //    EnablePowerupServerRpc(powerup, state);
-    //}
 
 }

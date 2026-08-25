@@ -46,7 +46,6 @@ public class UI : MonoBehaviour
     [SerializeField]
     private Slider energyBar;
 
-    private InputAction mouvementActivateInput;
     private InputAction finger1Pos;
     private InputAction finger1Press;
     private InputAction finger2Pos;
@@ -58,17 +57,14 @@ public class UI : MonoBehaviour
 
     private float rightPressed;
     private float leftPressed;
-    private byte LeftJoySFingerIdx;
-    private byte RightJoySFingerIdx;
-    private Vector2 finger1HeldDelta;
-    private Vector2 finger2HeldDelta;
-    Vector2 leftjoystickDisplace;
-    Vector2 rightjoystickDisplace;
 
     private float jumpCooldown = 1;
     private byte activeJumpCooldown = 0;
 
     public GameObject hookDisableButton;
+
+    [SerializeField]
+    private GameObject[] powerUpsUI;
 
 
     private void Awake()
@@ -109,11 +105,50 @@ public class UI : MonoBehaviour
     }
     
 
+
+
     private void Start()
     {
         Application.targetFrameRate = 60;
         uiRaycast = new UIRaycast(this.GetComponent<Canvas>());
+
+        GameObject CancelPowerUpUIPrefab = Resources.Load<GameObject>("Prefabs/PowerUpsUI/CancelPowerUpUI");
+        for (int i = 0; i < 8; i++)
+        {
+            switch (playerNet.equipedPowerUpMap[i])
+            {
+                case PowerUp.None:
+                    break;
+                case PowerUp.GraplinHook:
+
+                    GameObject GraplinHookUIPrefab = Resources.Load<GameObject>("Prefabs/PowerUpsUI/GraplingHookUI");
+                    GameObject GraplinHookUIInstance = Instantiate(GraplinHookUIPrefab, powerUpsUI[i].transform);
+
+                    GraplinHookUIPrefab = null;
+
+                    GameObject GraplinHookUICancelInstance = Instantiate(CancelPowerUpUIPrefab, GraplinHookUIInstance.transform);
+                    GraplinHookUICancelInstance.GetComponent<Button>().onClick.AddListener(() => CancelPowerUp(i));
+                    var GraplinHookCancelUiLink = playerNet.powerUpsGB[i].GetComponent<Grapling>().hook.gameObject.AddComponent<PowerUpCancelUiLink>();
+                    GraplinHookCancelUiLink.UiButton = GraplinHookUICancelInstance;
+
+                    break;
+                case PowerUp.Propeller:
+
+
+                    GameObject PropellerUIPrefab = Resources.Load<GameObject>("Prefabs/PowerUpsUI/PropellerUI");
+                    GameObject PropellerUIInstance = Instantiate(PropellerUIPrefab, powerUpsUI[i].transform);
+
+                    PropellerUIPrefab = null;
+
+                    break;
+            }
+        }
+        CancelPowerUpUIPrefab = null;
+        Resources.UnloadUnusedAssets();
+
+
     }
+
 
     private void FixedUpdate()
     {
@@ -134,17 +169,6 @@ public class UI : MonoBehaviour
         /// OPTI
         uiRaycast.RebuildCache();
         energyBar.value = playerNet.mechanicalState.energy / 100f;
-
-        //if (finger1Pressed) Debug.Log("pressed");
-
-        //finger1HeldDelta = finger1HeldDelta * finger1Press.ReadValue<float>() + finger1Delta.ReadValue<Vector2>();
-        //finger2HeldDelta = finger2HeldDelta * finger2Press.ReadValue<float>() + finger2Delta.ReadValue<Vector2>();
-
-        //leftjoystickDisplace = finger1HeldDelta * BitwiseUtils.CompareBytes(LeftJoySFingerIdx, 1) + finger2HeldDelta * BitwiseUtils.CompareBytes(LeftJoySFingerIdx, 2);
-        //rightjoystickDisplace = finger1HeldDelta * BitwiseUtils.CompareBytes(RightJoySFingerIdx, 1) + finger2HeldDelta * BitwiseUtils.CompareBytes(RightJoySFingerIdx, 2);
-
-        //leftjoystickRect.anchoredPosition = leftjoystickDisplace.normalized * Mathf.Min(leftjoystickDisplace.magnitude, 60f);
-        //rightjoystickRect.anchoredPosition = rightjoystickDisplace.normalized * Mathf.Min(rightjoystickDisplace.magnitude,60f);
 
         jumpCooldown = jumpCooldown - (Time.deltaTime * activeJumpCooldown);
         leftJScooldownImage.fillAmount = 1 - jumpCooldown / 1f;
@@ -277,7 +301,6 @@ public class UI : MonoBehaviour
     {
         if (activeJumpCooldown == 0)
         {
-            RightJoySFingerIdx = 0;
             player.ArmJumping(dir);
             activeJumpCooldown = 1;
             rightJSImage.color = buttonIdleColor;

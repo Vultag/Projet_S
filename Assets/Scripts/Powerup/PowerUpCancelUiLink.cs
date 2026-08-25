@@ -1,15 +1,10 @@
 using UnityEngine;
 
-public class HookUiLink : MonoBehaviour
+public class PowerUpCancelUiLink : MonoBehaviour
 {
     [HideInInspector]
     public GameObject UiButton;
 
-    //private Hook hook;
-    //private void Start()
-    //{
-    //    hook = GetComponent<Hook>();
-    //}
     private void OnEnable()
     {
         UiButton.SetActive(true);

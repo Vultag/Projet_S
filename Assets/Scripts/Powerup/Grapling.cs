@@ -7,8 +7,7 @@ using UnityEngine.InputSystem;
 
 public class Grapling : MonoBehaviour, PowerUpInterface
 {
-    [SerializeField]
-    private Hook hook;
+    public Hook hook;
     [SerializeField]
     private GameObject HookSprite;
 

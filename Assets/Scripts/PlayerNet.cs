@@ -176,8 +176,11 @@ public class PlayerNet : NetworkBehaviour
     public MechanicsState mechanicalState;
     //[HideInInspector]
     //public PowerUp activePowerUp;
-    [SerializeField]
-    private GameObject[] powerUpsGB;
+
+    [HideInInspector]
+    public PowerUp[] equipedPowerUpMap = new PowerUp[8];
+    [HideInInspector]
+    public GameObject[] powerUpsGB = new GameObject[8];
     [SerializeField]
     private PowerUpInterface[] powerUps;
 
@@ -222,11 +225,45 @@ public class PlayerNet : NetworkBehaviour
         player = GetComponent<Player>();
         clientPlayer = GetComponent<ClientPlayer>();
 
-        powerUps = new PowerUpInterface[powerUpsGB.Length];
-        for (int i = 0; i < powerUpsGB.Length; i++)
+        /// TEMP -> SETUP IN MENU
+        equipedPowerUpMap[0] = PowerUp.GraplinHook;
+        equipedPowerUpMap[1] = PowerUp.Propeller;
+
+
+        powerUps = new PowerUpInterface[8];
+        for (int i = 0; i < 8; i++)
         {
-            powerUps[i] = powerUpsGB[i].GetComponent<PowerUpInterface>();
+            switch (equipedPowerUpMap[i])
+            {
+                case PowerUp.None:
+                    break;
+                case PowerUp.GraplinHook:
+
+                    GameObject GraplinHookPrefab = Resources.Load<GameObject>("Prefabs/PowerUps/Grapling");
+                    GameObject GraplinHookInstance = Instantiate(GraplinHookPrefab, PlayerBody.transform);
+
+                    GraplinHookInstance.GetComponent<Grapling>().hook.playerBody = PlayerBody;
+
+                    powerUpsGB[i] = GraplinHookInstance;
+                    powerUps[i] = powerUpsGB[i].GetComponent<PowerUpInterface>();
+                    GraplinHookPrefab = null;
+
+                    break;
+                case PowerUp.Propeller:
+
+                    GameObject PropellerPrefab = Resources.Load<GameObject>("Prefabs/PowerUps/Propeller");
+                    GameObject PropellerInstance = Instantiate(PropellerPrefab, PlayerBody.transform);
+
+                    PropellerInstance.GetComponent<Propeller>().playerBody = PlayerBody;
+
+                    powerUpsGB[i] = PropellerInstance;
+                    powerUps[i] = powerUpsGB[i].GetComponent<PowerUpInterface>();
+                    PropellerPrefab = null;
+
+                    break;
+            }
         }
+        Resources.UnloadUnusedAssets();
 
         ///graplingHook = powerUps[(int)PowerUp.GraplinHook-1].ga.GetComponent<Grapling>();
 
@@ -258,8 +295,10 @@ public class PlayerNet : NetworkBehaviour
 
     public void UpdateSyncedStates()
     {
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 8; i++)
         {
+            /// temp
+            if (powerUps[i] == null) continue;
             powerUps[i].SavePowerUpState();
         }
         latestSyncedMechanicsStatePayload = latestServerStatePayload.playerMechanicsState;
@@ -282,8 +321,9 @@ public class PlayerNet : NetworkBehaviour
         mechanicalState.energy = mechState.energy;
         mechanicalState.PowerUpsStates = mechState.PowerUpsStates;
 
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 8; i++)
         {
+            if (powerUps[i] == null) continue;
             powerUps[i].RestorePowerUpState(((mechState.PowerUpsStates >> i) & 1) == 1);
         }
 
@@ -359,7 +399,9 @@ public class PlayerNet : NetworkBehaviour
     {
         InputPayload payload = inputPayloadRBuffer.Read(relativeTick);
 
-        mechanicalState.energy = Mathf.Min(mechanicalState.energy + 0.25f,100);
+        //mechanicalState.energy = Mathf.Min(mechanicalState.energy + 0.25f,100);
+        mechanicalState.energy = Mathf.Max(mechanicalState.energy - 0.1f, 0);
+
         ProcessAction(payload.action1, payload.action1Delta);
         ProcessAction(payload.action2, payload.action2Delta);
 

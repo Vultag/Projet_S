@@ -94,8 +94,8 @@ public class Player : MonoBehaviour
         var ui = FindFirstObjectByType<UI>(FindObjectsInactive.Include);
         ui.player = this;
         ui.playerNet = GetComponent<PlayerNet>();
-        var hookUiLink =hookGB.AddComponent<HookUiLink>();
-        hookUiLink.UiButton = ui.hookDisableButton;
+        //var hookUiLink =hookGB.AddComponent<HookUiLink>();
+        //hookUiLink.UiButton = ui.hookDisableButton;
 
         gameManager = FindFirstObjectByType<GameManager>(FindObjectsInactive.Include);
 

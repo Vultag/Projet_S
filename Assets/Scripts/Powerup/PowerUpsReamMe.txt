@@ -9,10 +9,6 @@
 			2 passive (energy) ?
 			2 active (charges) ?
 
-	LATER:
-	(Tech tree modifier for each that modify their behavior)
-	1 Ultimate (charges with damage/team contribution) ?
-
 	Utility PowerUps List:
 
 		Mobility:
@@ -23,7 +19,7 @@
 			- ...
 		Defensive:
 			- Nano repair bot (link to ally player to restore HP)
-			- Plasma barrier (parabola that reflect projectile)
+			- Plasma barrier (parabola that block projectiles)
 			- Metamaterial coating (invisibility)
 			- EMP launcher (grenade launcher that disable movement/abilities)
 			- Smoke emitter
@@ -36,12 +32,59 @@
 			- Auto turret. (automaticly shoot enemies within range)
 			- War flail (ball trailling behind the player body, deal damage on impact)
 			- Spiked piston (piston deals damage on enemy impact)
+			- Bladed chaines (player body deals damage on enemy friction depending on the angular velocity)
 		Active:
-			- Plasma gun (rifle with bouning projectile)
+			- Rifle
 			- Grenade launcher
 			- Guided missile lancher
 			- Flame thrower
+			- Explosive Xbow
+			- Shotgun
 			- ...
+
+
+			
+	LATER:
+	(Tech tree modifier for each that modify their behavior)
+	1 Ultimate (charges with damage/team contribution) ?
+
+	Tech modifier:
+	(each modification can reduce/increase cost of use depending on the effect)
+	(unlocked uppon leveling the powerUp: xp for use at the end of each game)
+		
+		Utility:
+			
+			Mobility:
+				Grappling hook:
+					-> can hook players
+					-> pull towards the attach point
+				Propeller:
+					-> trigger instead of continuous
+				Sticky foam:
+					-> lay harmfull substance on the surface trailling behind the sticked area
+				...
+			Defensive:
+				Plasma barrier:
+					-> reflect projectiles instead of blocking them
+					-> bigger/smaller surface
+					-> absorb projectiles to generate energy
+				EMP launcher:
+					-> projectile instead of grenade (like a dart)
+				...
+				
+		Offensive:
+			
+			Passive:
+				Bladed chaines:
+					-> more damage but increase friction
+				...
+			Active:
+				Rifle:
+					-> bouning projectile
+					-> hitscan with red dot
+				...
+			
+
 
 	Ultimates :
 		- Micro-Singularity canon (shoot a black hole that sucks up and destroy any player)

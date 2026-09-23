@@ -56,20 +56,18 @@ public class ServerManager : MonoBehaviour
 
     void FixedUpdate()
     {
-        var playerNets = serverManagerNet.Players;
-
         uint oldestCommonPayloadTick = 67676767;
         uint earlyestPayloadTick = 0;
 
-        if (playerNets.Count < 1)
+        if (GameSyncManager.Players.Count < 1)
         {
-            Debug.LogError(playerNets.Count);
+            Debug.LogError(GameSyncManager.Players.Count);
             return;
         }
 
-        for (int i = 0; i < serverManagerNet.Players.Count; i++)
+        for (int i = 0; i < GameSyncManager.Players.Count; i++)
         {
-            var payload = serverManagerNet.Players[i].inputPayloadRBuffer.Read(0);
+            var payload = GameSyncManager.Players[i].inputPayloadRBuffer.Read(0);
             oldestCommonPayloadTick = oldestCommonPayloadTick > payload.tick ? payload.tick : oldestCommonPayloadTick;
             earlyestPayloadTick = payload.tick > earlyestPayloadTick ? payload.tick : earlyestPayloadTick;
         }
@@ -86,9 +84,9 @@ public class ServerManager : MonoBehaviour
                 Debug.Log("qsdqsdaara");
                 oldestCommonPayloadTick = earlyestPayloadTick - maximumTickGap;
             }
-            for (int i = 0; i < serverManagerNet.Players.Count; i++)
+            for (int i = 0; i < GameSyncManager.Players.Count; i++)
             {
-                var payload = serverManagerNet.Players[i].inputPayloadRBuffer;
+                var payload = GameSyncManager.Players[i].inputPayloadRBuffer;
                 if (payload.Read(0).tick <= (short)(earlyestPayloadTick - maximumTickGap))
                 {
                     Debug.Log("Inputs dropped at PLAYER " + i);
@@ -113,7 +111,7 @@ public class ServerManager : MonoBehaviour
             ServerManagerNet.tick++;
             gameManager.Tick(ServerManagerNet.tick);
 
-            foreach (PlayerNet playerNet in playerNets)
+            foreach (PlayerNet playerNet in GameSyncManager.Players)
             {
 
                 short leadingPayloadTickDiff = (short)(oldestCommonPayloadTick - playerNet.inputPayloadRBuffer.Read(0).tick);
@@ -130,13 +128,88 @@ public class ServerManager : MonoBehaviour
 
     }
 
-    public void playerJoin(int playerCount,PlayerNet newPlayerNet)
+    public void playerJoin(PlayerNet newPlayerNet)
     {
+        /// Join rpc to new client for every other connected player
+        var newClientTarget = new ClientRpcParams{ Send = new ClientRpcSendParams { TargetClientIds = new[] { newPlayerNet.OwnerClientId } } };
+        for (int i = 0; i < targetClientIds.Count; i++)
+        {
+            serverManagerNet.playerJoinClientRpc(
+                serverManagerNet.playersInitialisationData[i],
+                statePayloads[i],
+                targetClientIds[i],
+                newClientTarget
+                );
+        }
         targetClientIds.Add(newPlayerNet.OwnerClientId);
+        var newPlyerIdx = targetClientIds.Count-1;
+
         newPlayerNet.inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
         newPlayerNet.inputPayloadRBuffer.SlideHead(-1);
         newPlayerNet.inputPayloadRBuffer.Write(new InputPayload { tick = ServerManagerNet.tick});
         newPlayerNet.latestInputsRecivedTick = ServerManagerNet.tick;
+
+        switch (GameSyncManager.Players.Count)
+        {
+            case 1:
+                serverManagerNet.playersInitialisationData.Add(new PlayerInitialisationData
+                {
+                    playerColor = Color.red,
+                    playerTeam = CollisionLayer.TeamA
+                });
+                newPlayerNet.playerIcon.color = Color.red;
+                newPlayerNet.team = CollisionLayer.TeamA;
+                break;
+            case 2:
+                serverManagerNet.playersInitialisationData.Add(new PlayerInitialisationData
+                {
+                    playerColor = Color.blue,
+                    playerTeam = CollisionLayer.TeamB
+                });
+                newPlayerNet.playerIcon.color = Color.blue;
+                newPlayerNet.team = CollisionLayer.TeamB;
+                break;
+            case 3:
+                serverManagerNet.playersInitialisationData.Add(new PlayerInitialisationData
+                {
+                    playerColor = Color.green,
+                    playerTeam = CollisionLayer.TeamC
+                });
+                newPlayerNet.playerIcon.color = Color.green;
+                newPlayerNet.team = CollisionLayer.TeamC;
+                break;
+            case 4:
+                serverManagerNet.playersInitialisationData.Add(new PlayerInitialisationData
+                {
+                    playerColor = Color.grey,
+                    playerTeam = CollisionLayer.TeamD
+                });
+                newPlayerNet.playerIcon.color = Color.grey;
+                newPlayerNet.team = CollisionLayer.TeamD;
+                break;
+            default:
+                Debug.LogError("4+ players not implemented");
+                break;
+
+        }
+
+        RapierWorld.collider_set_memberships(
+          RapierWorld.world,
+          newPlayerNet.PlayerBody.gameObject.GetComponent<RapierCircleShape>().colliderHandle,
+          (uint)(CollisionLayer.Player | newPlayerNet.team)
+          );
+
+        newPlayerNet.enabled = true;
+
+        serverManagerNet.playerJoinClientRpc(
+            serverManagerNet.playersInitialisationData[newPlyerIdx],
+            new StatePayload {
+                tick = ServerManagerNet.tick ,
+                playerMechanicsState = MechanicsState.Default(),
+            },
+            newPlayerNet.OwnerClientId, 
+            new ClientRpcParams { Send = new ClientRpcSendParams { TargetClientIds = NetworkManager.Singleton.ConnectedClientsIds } }
+            );
 
         //switch (playerCount)
         //{
@@ -154,7 +227,7 @@ public class ServerManager : MonoBehaviour
         //        break;
         //}
 
-        serverManagerNet.SyncPlayersClientRpc(statePayloads, newPlayerNet.OwnerClientId);
+        //serverManagerNet.SyncPlayersClientRpc(statePayloads, newPlayerNet.OwnerClientId);
 
     }
 }

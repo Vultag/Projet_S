@@ -4,6 +4,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class Grapling : MonoBehaviour, PowerUpInterface
 {
@@ -43,16 +44,19 @@ public class Grapling : MonoBehaviour, PowerUpInterface
     {
         hook.SaveState();
     }
-
-    public void PowerUpSelect()
+    public void PowerUpSelection(bool SelectOrDeselect)
     {
-        gameObject.SetActive(true);
+        this.gameObject.SetActive(SelectOrDeselect);
     }
+    //public void PowerUpSelect()
+    //{
+    //    gameObject.SetActive(true);
+    //}
 
-    public void PowerUpDeselect()
-    {
-        gameObject.SetActive(false);
-    }
+    //public void PowerUpDeselect()
+    //{
+    //    gameObject.SetActive(false);
+    //}
 
     public void PowerUpEnable()
     {

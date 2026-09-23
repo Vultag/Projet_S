@@ -7,10 +7,12 @@ public interface PowerUpInterface
     void RestorePowerUpState(bool OnOrOff);
     void SavePowerUpState();
 
-    void PowerUpSelect();
-    void PowerUpDeselect();
+    //void PowerUpSelect();
+    //void PowerUpDeselect();
+    void PowerUpSelection(bool SelectOrDeselect);
     void PowerUpEnable();
     void PowerUpDisable();
+
 
     void PowerUpAim(Vector2 dir);
     void PowerUpAction1(Vector2 delta);

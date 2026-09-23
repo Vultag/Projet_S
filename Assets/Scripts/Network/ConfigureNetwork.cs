@@ -30,28 +30,11 @@ public class ConfigureNetwork : MonoBehaviour
         if (NetworkManager.Singleton.IsServer)
         {
             serverManagerGB.GetComponent<ServerManager>().enabled = true;
-            serverManagerGB.GetComponent<ServerManagerNet>().Players.Add(playerObj.GetComponent<PlayerNet>());
-            int playerCount = serverManagerGB.GetComponent<ServerManagerNet>().Players.Count;
-            serverManagerGB.GetComponent<ServerManager>().playerJoin(playerCount,playerObj.GetComponent<PlayerNet>());
+            GameSyncManager.Players.Add(playerObj.GetComponent<PlayerNet>());
+            //int playerCount = GameSyncManager.Players.Count;
+            serverManagerGB.GetComponent<ServerManager>().playerJoin(playerObj.GetComponent<PlayerNet>());
             ///playerObj.GetComponentInChildren<ObjectsStatesCollector>().enabled = true;
-            Color playerColor = Color.white;
-            switch (playerCount)
-            {
-                case 1:
-                    playerColor = Color.red;
-                    break;
-                case 2:
-                    playerColor = Color.blue;
-                    break;
-                case 3:
-                    playerColor = Color.green;
-                    break;
-                case 4:
-                    playerColor = Color.grey;
-                    break;
-
-            }
-            playerObj.GetComponent<PlayerNet>().playerIcon.color = playerColor;
+            
         }
         else
         {

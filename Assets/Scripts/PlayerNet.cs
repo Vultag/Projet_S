@@ -2,9 +2,7 @@ using System;
 using NUnit.Framework.Internal;
 using Unity.Collections;
 using Unity.Netcode;
-using Unity.VisualScripting;
 using UnityEngine;
-using static UnityEngine.Rendering.DebugUI;
 
 //public NetworkVariable<bool> propellerActive =
 //   new NetworkVariable<bool>(
@@ -104,10 +102,15 @@ public enum Action // *
     Push,
     Aim,
     ChangeSelectedPowerUp,
-    GraplingShoot,
-    GraplingDetatch,
-    PropellingStart,
-    PropellingStop
+    ChangePassivePowerUp,
+    CancelPowerUp,
+    PowerUpAction1,
+    PowerUpAction2,
+    PowerUpPassif
+    //GraplingShoot,
+    //GraplingDetatch,
+    //PropellingStart,
+    //PropellingStop
     /// TO DO
 }
 public struct InputPayload : INetworkSerializable
@@ -155,7 +158,7 @@ public struct StatePayload : INetworkSerializable
     }
 }
 
-public class PlayerNet : NetworkBehaviour
+public class PlayerNet : NetworkBehaviour, IDamageable
 {
     public static short PayloadRBufferSize = 512;
     public static short PayloadTransmiotorRBufferSize = 32;
@@ -174,13 +177,15 @@ public class PlayerNet : NetworkBehaviour
 
     [HideInInspector]
     public MechanicsState mechanicalState;
+    [HideInInspector]
+    public CollisionLayer team;
     //[HideInInspector]
     //public PowerUp activePowerUp;
 
     [HideInInspector]
     public PowerUp[] equipedPowerUpMap = new PowerUp[8];
     [HideInInspector]
-    public GameObject[] powerUpsGB = new GameObject[8];
+    public GameObject[] powerUpsGB;
     [SerializeField]
     private PowerUpInterface[] powerUps;
 
@@ -214,23 +219,24 @@ public class PlayerNet : NetworkBehaviour
     private Player player;
     private ClientPlayer clientPlayer;
 
+    public float health { get; set; } = 100;
+    public float ROLLBACKhealth { get; set; }
 
-    public override void OnNetworkSpawn()
+    private void Start()
     {
-        mechanicalState = MechanicsState.Default();
-        latestSyncedMechanicsStatePayload = MechanicsState.Default();
 
         //Debug.Log($"Spawned | IsOwner={IsOwner} | OwnerClientId={OwnerClientId} | LocalClientId={NetworkManager.Singleton.LocalClientId}");
 
-        player = GetComponent<Player>();
-        clientPlayer = GetComponent<ClientPlayer>();
+        GameSyncManager.damageableDatabase.Add(PlayerBody.entityHandle, this);
 
         /// TEMP -> SETUP IN MENU
         equipedPowerUpMap[0] = PowerUp.GraplinHook;
         equipedPowerUpMap[1] = PowerUp.Propeller;
+        equipedPowerUpMap[4] = PowerUp.AutoTurret;
 
 
         powerUps = new PowerUpInterface[8];
+        powerUpsGB = new GameObject[8];
         for (int i = 0; i < 8; i++)
         {
             switch (equipedPowerUpMap[i])
@@ -245,6 +251,7 @@ public class PlayerNet : NetworkBehaviour
                     GraplinHookInstance.GetComponent<Grapling>().hook.playerBody = PlayerBody;
 
                     powerUpsGB[i] = GraplinHookInstance;
+                    if (powerUpsGB[i].GetComponent<PowerUpInterface>() == null) Debug.Log("eeeeeeee");
                     powerUps[i] = powerUpsGB[i].GetComponent<PowerUpInterface>();
                     GraplinHookPrefab = null;
 
@@ -261,9 +268,34 @@ public class PlayerNet : NetworkBehaviour
                     PropellerPrefab = null;
 
                     break;
+                case PowerUp.AutoTurret:
+
+                    GameObject AutoTurretPrefab = Resources.Load<GameObject>("Prefabs/PowerUps/AutoTurret");
+                    GameObject AutoTurretInstance = Instantiate(AutoTurretPrefab, PlayerBody.transform);
+                    AutoTurretInstance.GetComponent<AutoTurret>().playerBodyHandle = PlayerBody.entityHandle;
+                    AutoTurretInstance.GetComponent<AutoTurret>().team = team;
+
+                    powerUpsGB[i] = AutoTurretInstance;
+                    powerUps[i] = powerUpsGB[i].GetComponent<PowerUpInterface>();
+                    AutoTurretPrefab = null;
+
+                    break;
             }
         }
         Resources.UnloadUnusedAssets();
+        GameSyncManager.GameSyncSave();
+        ////RapierWorld.world_store_snapshot(RapierWorld.world);
+        ////RapierToUnityDatabase.ROLLBACKsave();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        player = GetComponent<Player>();
+        clientPlayer = GetComponent<ClientPlayer>();
+        mechanicalState = MechanicsState.Default();
+
+        latestSyncedMechanicsStatePayload = MechanicsState.Default();
+        latestServerStatePayload.playerMechanicsState = MechanicsState.Default();
 
         ///graplingHook = powerUps[(int)PowerUp.GraplinHook-1].ga.GetComponent<Grapling>();
 
@@ -344,6 +376,7 @@ public class PlayerNet : NetworkBehaviour
 
     private void ProcessAction(Action action, Vector2 delta)
     {
+        int activePowerUp = (int)mechanicalState.selectedPowerUp - 1;
         switch (action)
         {
             case Action.None:
@@ -362,35 +395,57 @@ public class PlayerNet : NetworkBehaviour
                 PowerUp newPowerUp = (PowerUp)delta.x;
                 if (mechanicalState.selectedPowerUp != 0)
                 {
-                    powerUps[(int)mechanicalState.selectedPowerUp - 1].PowerUpDeselect();
+                    powerUps[activePowerUp].PowerUpSelection(false);
                 }
                 if (newPowerUp != 0)
                 {
-                    powerUps[(int)newPowerUp - 1].PowerUpSelect();
+                    powerUps[(int)newPowerUp - 1].PowerUpSelection(true);
                 }
                 mechanicalState.selectedPowerUp = newPowerUp;
 
                 break;
+            case Action.ChangePassivePowerUp:
+                int powerUpIdx = (int)delta.x;
+                int newPowerUpState = ((mechanicalState.PowerUpsStates >> powerUpIdx) & 1)^1;
+                powerUps[powerUpIdx].PowerUpSelection(newPowerUpState == 1);
+                mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates & ~(1 << powerUpIdx) | (newPowerUpState << powerUpIdx));
+                break;
+            case Action.CancelPowerUp:
 
+                powerUps[(int)delta.x - 1].PowerUpAction2(Vector2.zero);
+                mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates & ~(1 << (byte)delta.x - 1));
+
+                break;
             case Action.Aim:
                 if(mechanicalState.selectedPowerUp>0)
-                    powerUps[(int)mechanicalState.selectedPowerUp-1].PowerUpAim(delta);
+                    powerUps[activePowerUp].PowerUpAim(delta);
+                break;
+            case Action.PowerUpAction1:
+                powerUps[activePowerUp].PowerUpAction1(delta);
+                mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates | (1 << (byte)activePowerUp));
                 break;
 
-            case Action.GraplingShoot:
-                powerUps[(int)PowerUp.GraplinHook-1].PowerUpAction1(delta);
-                mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates | (1 << (byte)PowerUp.GraplinHook-1));
+            case Action.PowerUpAction2:
+                powerUps[activePowerUp].PowerUpAction2(delta);
+                mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates & ~(1 << (byte)activePowerUp));
                 break;
-            case Action.GraplingDetatch:
-                powerUps[(int)PowerUp.GraplinHook-1].PowerUpAction2(delta);
-                mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates & ~(1 << (byte)PowerUp.GraplinHook-1));
+            case Action.PowerUpPassif:
+                powerUps[(int)delta.x].PowerUpAction1(Vector2.zero);
                 break;
-            case Action.PropellingStart:
-                powerUps[(int)PowerUp.Propeller - 1].PowerUpAction1(delta);
-                break;
-            case Action.PropellingStop:
-                powerUps[(int)PowerUp.Propeller - 1].PowerUpAction2(delta);
-                break;
+                //case Action.GraplingShoot:
+                //    powerUps[(int)PowerUp.GraplinHook-1].PowerUpAction1(delta);
+                //    mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates | (1 << (byte)PowerUp.GraplinHook-1));
+                //    break;
+                //case Action.GraplingDetatch:
+                //    powerUps[(int)PowerUp.GraplinHook-1].PowerUpAction2(delta);
+                //    mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates & ~(1 << (byte)PowerUp.GraplinHook-1));
+                //    break;
+                //case Action.PropellingStart:
+                //    powerUps[(int)PowerUp.Propeller - 1].PowerUpAction1(delta);
+                //    break;
+                //case Action.PropellingStop:
+                //    powerUps[(int)PowerUp.Propeller - 1].PowerUpAction2(delta);
+                //    break;
         }
 
     }
@@ -574,12 +629,24 @@ public class PlayerNet : NetworkBehaviour
         while (i > 0)
         {
             i--;
-            //Debug.Log(i);
             //Debug.Log(((transmitorHead - i) + PlayerNet.PayloadTransmiotorRBufferSize) % PlayerNet.PayloadTransmiotorRBufferSize);
             inputPayloadRBuffer.Write(inputPayloadTransmitor[((transmitorHead - i)+ PlayerNet.PayloadTransmiotorRBufferSize) % PlayerNet.PayloadTransmiotorRBufferSize]);
             //if (inputPayloadRBuffer.Read(0).pistonPush) Debug.Log("push recived at " + Time.realtimeSinceStartup);
         }
         latestInputsRecivedTick = tick;
+    }
+
+    public void Die()
+    {
+        //Debug.Log(health);
+    }
+
+    public void TakeDamage(float damage)
+    {
+        health -= damage;
+        //Debug.Log(health);
+        if (health <= 0)
+            Die();
     }
 
 

@@ -52,14 +52,51 @@ public class EntityData
     public IRapierTriggerListener[] trig_listener;
 }
 
-
+[Flags]
+public enum CollisionLayer
+{
+    //None = (1 << 0),
+    //All = ~0, 
+    Player = (1 << 0),
+    Obstacle = (1 << 1),
+    Projectiles = (1 << 2),
+    PlayerAccessories = (1 << 3),
+    TeamA = (1 << 4),
+    TeamB = (1 << 5),
+    TeamC = (1 << 6),
+    TeamD = (1 << 7),
+}
 internal static class RapierWorld
 {
+    // Precomputed collision masks
+    private static readonly CollisionLayer[] CollisionMasks = new CollisionLayer[32]
+    {
+        ///Player
+        CollisionLayer.Player | CollisionLayer.Obstacle | CollisionLayer.PlayerAccessories,
+        ///Obstacle
+        CollisionLayer.Player | CollisionLayer.Projectiles |  CollisionLayer.PlayerAccessories,
+        ///Projectiles
+        CollisionLayer.Obstacle,
+        ///PlayerAccessories
+        CollisionLayer.Player | CollisionLayer.Obstacle,
+        ///TeamA
+        CollisionLayer.TeamB | CollisionLayer.TeamC | CollisionLayer.TeamD,
+        ///TeamB
+        CollisionLayer.TeamA | CollisionLayer.TeamC | CollisionLayer.TeamD,
+        ///TeamC
+        CollisionLayer.TeamA | CollisionLayer.TeamB | CollisionLayer.TeamD,
+        ///TeamD
+        CollisionLayer.TeamA | CollisionLayer.TeamB | CollisionLayer.TeamC,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    };
+
     static public IntPtr world;
 
     public static readonly uint[] LayerFilters = new uint[32];
 
-    static public Dictionary<ulong, EntityData> unityToRapierEntityMap = new(512);
+    //static public RapierToUnityDatabase unityToRapierEntityMap = new();
+    //static private Dictionary<ulong, EntityData> unityToRapierEntityMapROLLBACK = new(512);
+    //static private int unityToRapierEntityMapVersion = 0;
 
     static NativeArray<TransformUpdate> TransformUpdates;
     static UInt32 trans_lenght;
@@ -152,28 +189,19 @@ internal static class RapierWorld
 
 
     [DllImport("rapier_unity")]
-    public static extern void body_add_circle_collider(
+    public static extern ulong body_add_circle_collider(
           IntPtr world,
          ulong handle,
          float radius,
          float offX,
          float offY,
          float friction,
-         byte layer,
-         bool registerCollideEvent
+         uint layer,
+         bool registerCollideEvent,
+         bool isSensor
       );
     [DllImport("rapier_unity")]
-    public static extern ulong add_standalone_circle_collider(
-          IntPtr world,
-         float radius,
-         float offX,
-         float offY,
-         byte layer,
-         //bool registerCollideEvent,
-         bool isTrigger
-      );
-    [DllImport("rapier_unity")]
-    public static extern void body_add_box_collider(
+    public static extern ulong body_add_box_collider(
          IntPtr world,
          ulong handle,
          float width,
@@ -181,20 +209,10 @@ internal static class RapierWorld
          float offX,
          float offY,
          float friction,
-         byte layer,
-         bool registerCollideEvent
+         uint layer,
+         bool registerCollideEvent,
+         bool isSensor
      ); 
-    [DllImport("rapier_unity")]
-    public static extern ulong add_standalone_box_collider(
-         IntPtr world,
-         float width,
-         float height,
-         float offX,
-         float offY,
-         byte layer,
-         //bool registerCollideEvent,
-         bool isTrigger
-     );
 
     [DllImport("rapier_unity")]
     public static extern void body_add_polyline_collider(
@@ -202,7 +220,8 @@ internal static class RapierWorld
         ulong body,
         Vector2[] vertices,
         UIntPtr vertexCount,
-         float friction
+        float friction,
+        uint layer
     );
 
 
@@ -373,6 +392,22 @@ internal static class RapierWorld
     [DllImport("rapier_unity")]
     public static extern void world_restore_snapshot(IntPtr world);
 
+    [DllImport("rapier_unity")]
+    public static extern ulong world_get_closest_body(
+        IntPtr world,
+        ulong fromBodyHandle,
+        float x,
+        float y,
+        float radius,
+        uint layer
+    );
+    [DllImport("rapier_unity")]
+    public static extern void collider_set_memberships(
+        IntPtr worldPtr,
+        ulong colliderHandle,
+        uint membership
+    );
+
 
     public static void Create_world()
     {
@@ -385,16 +420,13 @@ internal static class RapierWorld
 
         for (int layer = 0; layer < 32; layer++)
         {
-            uint filter = 0;
-
-            for (int other = 0; other < 32; other++)
-            {
-                if (!Physics2D.GetIgnoreLayerCollision(layer, other))
-                    filter |= 1u << other;
-            }
-
-            layerFilters[layer] = filter;
+            layerFilters[layer] = (uint)CollisionMasks[layer];
         }
+        //for (int layer = 0; layer < 32; layer++)
+        //{
+        //    layerFilters[layer] = (uint)Physics2D.GetLayerCollisionMask(layer);
+        //    Debug.Log(LayerMask.LayerToName(layer) +  " _ " + Physics2D.GetLayerCollisionMask(layer));
+        //}
         world = world_create();
         world_set_layer_filters(world, layerFilters);
     }
@@ -472,8 +504,8 @@ internal static class RapierWorld
         for (int i = 0; i < col_event_lenght; i++)
         {
 
-            if (!RapierWorld.unityToRapierEntityMap.TryGetValue(CollisionEvents[i].EntityA, out var entityA)) Debug.Log("couldnt get A entity " + CollisionEvents[i].EntityA);
-            if (!RapierWorld.unityToRapierEntityMap.TryGetValue(CollisionEvents[i].EntityB, out var entityB)) Debug.Log("couldnt get B entity " + CollisionEvents[i].EntityB);
+            GameSyncManager.rapierToUnityDatabase.TryGet(CollisionEvents[i].EntityA,out var entityA);
+            GameSyncManager.rapierToUnityDatabase.TryGet(CollisionEvents[i].EntityB, out var entityB);
 
             foreach (var l in entityA.col_listener)
                 l.OnRapierCollisionEnter(CollisionEvents[i].EntityB);
@@ -483,12 +515,18 @@ internal static class RapierWorld
         }
         for (int i = 0; i < trig_event_lenght; i++)
         {
-            if (!RapierWorld.unityToRapierEntityMap.TryGetValue(TiggerEvents[i].EntityA, out var entityA)) Debug.Log("couldnt get A entity " + TiggerEvents[i].EntityA);
-            if (!RapierWorld.unityToRapierEntityMap.TryGetValue(TiggerEvents[i].EntityB, out var entityB)) Debug.Log("couldnt get B entity " + TiggerEvents[i].EntityA);
+            GameSyncManager.rapierToUnityDatabase.TryGet(TiggerEvents[i].EntityA, out var entityA);
+            GameSyncManager.rapierToUnityDatabase.TryGet(TiggerEvents[i].EntityB, out var entityB);
 
             foreach (var l in entityA.trig_listener)
+            {
                 l.OnRapierTriggerEnter(entityB.GameObject, TiggerEvents[i].EntityB);
-
+                //Debug.Log(entityB.GameObject);
+            }
+            //foreach (var l in entityB.trig_listener)
+            //{
+            //    Debug.Log(entityA.GameObject);
+            //}
         }
     }
 
@@ -496,7 +534,7 @@ internal static class RapierWorld
     {
         for (int i = 0; i < trans_lenght; i++)
         {
-            if (!RapierWorld.unityToRapierEntityMap.TryGetValue(TransformUpdates[i].EntityId, out var body)) Debug.Log("couldnt get body " + TransformUpdates[i].EntityId);
+            GameSyncManager.rapierToUnityDatabase.TryGet(TransformUpdates[i].EntityId, out var body);
             body.Transform.SetPositionAndRotation(new Vector3(TransformUpdates[i].Position.x, TransformUpdates[i].Position.y, 0), quaternion.RotateZ(TransformUpdates[i].Rotation));
         }
     }

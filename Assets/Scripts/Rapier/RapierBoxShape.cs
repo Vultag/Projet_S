@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -5,12 +6,17 @@ public class RapierBoxShape : MonoBehaviour
 {
 
     [HideInInspector]
-    public ulong entityHandle;
+    public ulong colliderHandle;
+
+    [SerializeField]
+    private CollisionLayer layers;
 
     [SerializeField]
     private float2 dimentions;
     [SerializeField]
     private float friction;
+    [SerializeField]
+    bool isSensor;
 
 
     void Awake()
@@ -18,48 +24,24 @@ public class RapierBoxShape : MonoBehaviour
         if (TryGetComponent<RapierBody>(out var rb))
         {
             var col_listeners = rb.GetComponents<IRapierCollisionListener>();
+            var trig_listeners = rb.GetComponents<IRapierTriggerListener>();
 
-            RapierWorld.body_add_box_collider(
-                RapierWorld.world, rb.entityHandle
-                , dimentions.x/2f, dimentions.y / 2f, 0, 0, friction, 
-                (byte)gameObject.layer,
-                col_listeners.Length > 0
+            colliderHandle = RapierWorld.body_add_box_collider(
+                RapierWorld.world, 
+                rb.entityHandle,
+            dimentions.x/2f, dimentions.y / 2f, 0, 0, friction,
+                (uint)layers,
+                col_listeners.Length > 0 | trig_listeners.Length>0,
+                isSensor
                 );
+            //Debug.Log((gameObject.layer) + gameObject.name);
         }
         else
         {
-            var trig_listeners = GetComponents<IRapierTriggerListener>();
-
-            bool tigger_listen = false;
-            foreach (var listener in trig_listeners)
-            {
-                if (listener is MonoBehaviour mono && mono.isActiveAndEnabled)
-                {
-                    tigger_listen = true;
-                    break;
-                }
-            }
-
-            if (!tigger_listen)
-            {
-                Debug.Log("NO LISTENER");
-                return;
-            }
-
-            entityHandle = RapierWorld.add_standalone_box_collider(
-                RapierWorld.world, dimentions.x / 2f, dimentions.y / 2f, transform.position.x, transform.position.y,(byte)gameObject.layer, tigger_listen);
-
-
-            if (!RapierWorld.unityToRapierEntityMap.TryAdd(entityHandle, new EntityData
-            {
-                GameObject = gameObject,
-                Transform = transform,
-                trig_listener = trig_listeners
-            })) Debug.Log("coundt add " + entityHandle);
-
+            Debug.LogError("Collider with no body " + gameObject.name);
         }
 
-        RapierWorld.shape_set_enabled(RapierWorld.world, entityHandle, isActiveAndEnabled);
+        RapierWorld.shape_set_enabled(RapierWorld.world, colliderHandle, isActiveAndEnabled);
     }
 
     //private void OnEnable()

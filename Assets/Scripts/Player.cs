@@ -66,7 +66,7 @@ public class Player : MonoBehaviour
 
     public void syncTick(uint atTick)
     {
-        ServerManagerNet.tick = atTick;
+        ServerManagerNet.tick = atTick; 
         //Debug.Log("sync " + atTick);
     }
 
@@ -107,9 +107,8 @@ public class Player : MonoBehaviour
         serverManagerNet = FindFirstObjectByType<ServerManagerNet>(FindObjectsInactive.Include).GetComponent<ServerManagerNet>();
 
         ///activeInputPayload = InputPayload.Default(0);
-        RapierWorld.world_store_snapshot(RapierWorld.world);
 
-       // RapierWorld.PhysicsStep(1/60f);
+        // RapierWorld.PhysicsStep(1/60f);
 
     }
 
@@ -124,12 +123,13 @@ public class Player : MonoBehaviour
 
         playerNet.ProcessInputPayload(activeInputPayload);
 
+
         serverManagerNet.Reconciliation();
 
 
         if (actionNumThisFrame > 2)
         {
-            Debug.Break();
+            Debug.LogWarning("more tow action this frame");
         }
 
         gameManager.Tick(ServerManagerNet.tick);

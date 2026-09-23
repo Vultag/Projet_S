@@ -18,6 +18,9 @@ public class Propeller : MonoBehaviour, PowerUpInterface
     private byte thrustingIndex;
     //private Vector2 thrustingDirection;
 
+    //[HideInInspector]
+    //public Image selectedUIImage;
+
     public void RestorePowerUpState(bool OnOrOff)
     {
 
@@ -27,16 +30,19 @@ public class Propeller : MonoBehaviour, PowerUpInterface
     {
 
     }
-
-    public void PowerUpSelect()
+    public void PowerUpSelection(bool SelectOrDeselect)
     {
-        gameObject.SetActive(true);
+        this.gameObject.SetActive(SelectOrDeselect);
     }
+    //public void PowerUpSelect()
+    //{
+    //    gameObject.SetActive(true);
+    //}
 
-    public void PowerUpDeselect()
-    {
-        gameObject.SetActive(false);
-    }
+    //public void PowerUpDeselect()
+    //{
+    //    gameObject.SetActive(false);
+    //}
 
     public void PowerUpEnable()
     {

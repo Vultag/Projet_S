@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5096354911565007851}
   - component: {fileID: 7177874000882808751}
-  m_Layer: 10
+  m_Layer: 0
   m_Name: Circle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -102,9 +102,9 @@ GameObject:
   - component: {fileID: 2025293859786627100}
   - component: {fileID: 2572975676189153404}
   - component: {fileID: 8668018020538567222}
-  m_Layer: 10
+  m_Layer: 0
   m_Name: PlayerBody
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -159,9 +159,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f26e7382915fd9e4a90f3a2395cabcb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RapierCircleShape
-  entityHandle: 0
+  colliderHandle: 0
+  layers: 1
   radius: 1.5
   friction: 0.5
+  isSensor: 0
 --- !u!1 &4039647443155802123
 GameObject:
   m_ObjectHideFlags: 0
@@ -175,7 +177,7 @@ GameObject:
   - component: {fileID: 6390334922319022345}
   - component: {fileID: 2619005271190560227}
   - component: {fileID: 760104416660665861}
-  m_Layer: 10
+  m_Layer: 15
   m_Name: PistonBody
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -230,9 +232,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f26e7382915fd9e4a90f3a2395cabcb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RapierCircleShape
-  entityHandle: 0
+  colliderHandle: 0
+  layers: 8
   radius: 1.34
   friction: 0.5
+  isSensor: 0
 --- !u!114 &2619005271190560227
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -374,11 +378,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 149f040a22a63ee43af166f14aeb252d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RapierBoxShape
-  entityHandle: 0
+  colliderHandle: 0
+  layers: 0
   dimentions:
     x: 1
     y: 1
   friction: 0
+  isSensor: 0
 --- !u!1 &4486911195969571473
 GameObject:
   m_ObjectHideFlags: 0
@@ -562,7 +568,7 @@ GameObject:
   m_Component:
   - component: {fileID: 532947489561701803}
   - component: {fileID: 6111469343795154252}
-  m_Layer: 10
+  m_Layer: 0
   m_Name: Circle (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -653,7 +659,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6711971296684559831}
   - component: {fileID: 299477219317686976}
-  m_Layer: 10
+  m_Layer: 15
   m_Name: Circle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -747,7 +753,7 @@ GameObject:
   - component: {fileID: 9149770807525810715}
   - component: {fileID: 6606335824929717548}
   - component: {fileID: 4332652842924523414}
-  m_Layer: 10
+  m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -784,7 +790,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3061558566
+  GlobalObjectIdHash: 1643864336
   InScenePlacedSourceGlobalObjectIdHash: 4082568510
   DeferredDespawnTick: 0
   Ownership: 1
@@ -804,7 +810,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5832808260270493919}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 561d92bc0dc9188418fcb2a75cb58d10, type: 3}
   m_Name: 
@@ -815,6 +821,7 @@ MonoBehaviour:
   CogBody: {fileID: 3272250661340501739}
   Pistonjoint: {fileID: 2619005271190560227}
   playerIcon: {fileID: 6111469343795154252}
+  team: 0
   equipedPowerUpMap: 0000000000000000000000000000000000000000000000000000000000000000
   powerUpsGB:
   - {fileID: 0}

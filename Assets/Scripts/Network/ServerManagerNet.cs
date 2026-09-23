@@ -17,13 +17,29 @@ public struct rigidbodyState : INetworkSerializable
     }
 }
 
+public struct PlayerInitialisationData : INetworkSerializable
+{
+    public Color playerColor;
+    public CollisionLayer playerTeam;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> s)
+     where T : IReaderWriter
+    {
+        s.SerializeValue(ref playerColor);
+        s.SerializeValue(ref playerTeam);
+    }
+}
+
 
 public class ServerManagerNet : NetworkBehaviour
 {
     static public uint tick;
 
+    ////[HideInInspector]
+    ////public List<PlayerNet> Players;
     [HideInInspector]
-    public List<PlayerNet> Players;
+    public List<PlayerInitialisationData> playersInitialisationData = new List<PlayerInitialisationData>();
+
     private uint latestServerStatePayloadTick = 0;
     private uint syncedTick = 0;
 
@@ -31,13 +47,11 @@ public class ServerManagerNet : NetworkBehaviour
 
     private GameManager gameManager;
 
-    uint temp;
-
-
     private void Awake()
     {
         gameManager = FindFirstObjectByType<GameManager>(FindObjectsInactive.Include);
         gameManager.gameObject.SetActive(true);
+        GameSyncManager.bulletPool = FindAnyObjectByType<BulletPool>(FindObjectsInactive.Include);
     }
 
     /// RE IMPLEMENT PASSING BODIES STATES IN THE FUTURE ?
@@ -70,9 +84,9 @@ public class ServerManagerNet : NetworkBehaviour
             //rigidbody.angularVelocity = rigidbodyStates[i].phyState.angularVelocity;
         }
 
-        for (int i = 0; i < Players.Count; i++)
+        for (int i = 0; i < GameSyncManager.Players.Count; i++)
         {
-            Players[i].latestServerStatePayload = playersStatePayloads[i];
+            GameSyncManager.Players[i].latestServerStatePayload = playersStatePayloads[i];
             //Debug.Log("receive tick start : " +playersStatePayloads[i].tick);
         }
     }
@@ -81,47 +95,47 @@ public class ServerManagerNet : NetworkBehaviour
     //[ClientRpc(Delivery = RpcDelivery.Unreliable)]
     //public void SendLatestDataPayloadsClientRpc(uint tick, InputPayload[] p1inputPayloads, InputPayload[] p2inputPayloads, InputPayload[] p3inputPayloads, InputPayload[] p4inputPayloads)
     //{
-        /// Discard outdated ServerStatePayloads
-        //if (tick <= latestServerStatePayloadTick)
-        //    return;
+    /// Discard outdated ServerStatePayloads
+    //if (tick <= latestServerStatePayloadTick)
+    //    return;
 
-        //uint newInputsNum = tick - latestServerStatePayloadTick;
+    //uint newInputsNum = tick - latestServerStatePayloadTick;
 
-        //latestServerStatePayloadTick = tick;
-        //pendingServerData = true;
+    //latestServerStatePayloadTick = tick;
+    //pendingServerData = true;
 
-        /// OPTI
-        //if(!Players[0].IsOwner)
-        //{
-        //    for (int i = 0; i < newInputsNum; i++)
-        //    {
-        //        Players[0].inputPayloadRBuffer.Write(p1inputPayloads[i]);
-        //    }
-        //}
-        //if (Players.Count == 1) return;
-        //if (!Players[1].IsOwner)
-        //{
-        //    for (int i = 0; i < newInputsNum; i++)
-        //    {
-        //        Players[1].inputPayloadRBuffer.Write(p2inputPayloads[i]);
-        //    }
-        //}
-        //if (Players.Count == 2) return;
-        //if (!Players[2].IsOwner)
-        //{
-        //    for (int i = 0; i < newInputsNum; i++)
-        //    {
-        //        Players[2].inputPayloadRBuffer.Write(p3inputPayloads[i]);
-        //    }
-        //}
-        //if (Players.Count == 3) return;
-        //if (!Players[3].IsOwner)
-        //{
-        //    for (int i = 0; i < newInputsNum; i++)
-        //    {
-        //        Players[3].inputPayloadRBuffer.Write(p4inputPayloads[i]);
-        //    }
-        //}
+    /// OPTI
+    //if(!Players[0].IsOwner)
+    //{
+    //    for (int i = 0; i < newInputsNum; i++)
+    //    {
+    //        Players[0].inputPayloadRBuffer.Write(p1inputPayloads[i]);
+    //    }
+    //}
+    //if (Players.Count == 1) return;
+    //if (!Players[1].IsOwner)
+    //{
+    //    for (int i = 0; i < newInputsNum; i++)
+    //    {
+    //        Players[1].inputPayloadRBuffer.Write(p2inputPayloads[i]);
+    //    }
+    //}
+    //if (Players.Count == 2) return;
+    //if (!Players[2].IsOwner)
+    //{
+    //    for (int i = 0; i < newInputsNum; i++)
+    //    {
+    //        Players[2].inputPayloadRBuffer.Write(p3inputPayloads[i]);
+    //    }
+    //}
+    //if (Players.Count == 3) return;
+    //if (!Players[3].IsOwner)
+    //{
+    //    for (int i = 0; i < newInputsNum; i++)
+    //    {
+    //        Players[3].inputPayloadRBuffer.Write(p4inputPayloads[i]);
+    //    }
+    //}
 
     //}
 
@@ -143,72 +157,148 @@ public class ServerManagerNet : NetworkBehaviour
     //    }
     //}
 
-    /// OPTI
     [ClientRpc(Delivery = RpcDelivery.Reliable)]
-    public void SyncPlayersClientRpc(StatePayload[] statePayloads, ulong newClientID)
+    public void playerJoinClientRpc(PlayerInitialisationData playerInitialisationData, StatePayload statePayload, ulong newClientID, ClientRpcParams rpcParams)
     {
-        Players.Clear();
+        NetworkManager.Singleton.ConnectedClients.TryGetValue(newClientID, out var newPlayerNetwork);
+        var newPlayer = newPlayerNetwork.PlayerObject.GetComponent<PlayerNet>();
+        GameSyncManager.Players.Add(newPlayer);
+        newPlayer.playerIcon.color = playerInitialisationData.playerColor;
 
-        Color playerColor = Color.white;
+        RapierWorld.collider_set_memberships(
+           RapierWorld.world,
+            newPlayer.PlayerBody.gameObject.GetComponent<RapierCircleShape>().colliderHandle,
+           (uint)(CollisionLayer.Player | playerInitialisationData.playerTeam)
+           );
+
+        newPlayer.team = playerInitialisationData.playerTeam;
+        newPlayer.latestServerStatePayload = statePayload;
+        newPlayer.latestInputsRecivedTick = statePayload.tick;
+        for (int i = 0; i < GameSyncManager.Players.Count; i++)
         {
-            int i = 0;
-            foreach (var item in NetworkManager.Singleton.ConnectedClients.Values)
+            if (GameSyncManager.Players[i].IsOwner)
             {
-                i++;
-                Players.Add(item.PlayerObject.GetComponent<PlayerNet>());
-                switch (i)
-                {
-                    case 1:
-                        playerColor = Color.red;
-                        break;
-                    case 2:
-                        playerColor = Color.blue;
-                        break;
-                    case 3:
-                        playerColor = Color.green;
-                        break;
-                    case 4:
-                        playerColor = Color.grey;
-                        break;
-
-                }
-                item.PlayerObject.GetComponent<PlayerNet>().playerIcon.color = playerColor;
+                GameSyncManager.Players[i].GetComponent<Player>().enabled = true;
+                GameSyncManager.Players[i].GetComponent<Player>().syncTick(statePayload.tick);
             }
         }
+        newPlayer.enabled = true;
 
-        //for (int i = 0; i < Players.Count; i++)
-        //{
-        //    if (!Players[i].IsOwner)
-        //    {
-        //        Players[i].latestInputsRecivedTick = statePayloads[0].tick;
-        //    }
-        //}
-        //if (newClientID != NetworkManager.Singleton.LocalClientId)
-        //{
-        //    return;
-        //}
-        for (int i = 0; i < Players.Count; i++)
-        {
-            if (Players[i].IsOwner)
-            {
-                Players[i].GetComponent<Player>().enabled = true;
-                Players[i].GetComponent<Player>().syncTick(statePayloads[0].tick);
-            }
-            else
-                Players[i].latestInputsRecivedTick = statePayloads[0].tick;
-
-            Players[i].latestServerStatePayload = statePayloads[i];
-        }
     }
+
+
+
+    /// OPTI
+    //[ClientRpc(Delivery = RpcDelivery.Reliable)]
+    //public void SyncPlayersClientRpc(GameInitialisationData initialisationData,StatePayload[] statePayloads, ulong newClientID)
+    //{
+    //    //Color playerColor = Color.white;
+    //    //CollisionLayer team = CollisionLayer.TeamA;
+    //    {
+
+    //        int i = 0;
+    //        foreach (var item in NetworkManager.Singleton.ConnectedClients.Values)
+    //        {
+    //            i++;
+    //            Players.Add(item.PlayerObject.GetComponent<PlayerNet>());
+
+
+    //            Players[i].playerIcon.color = initialisationData;
+
+    //            if (Players[i].IsOwner)
+    //            {
+    //                Players[i].GetComponent<Player>().enabled = true;
+    //                Players[i].GetComponent<Player>().syncTick(statePayloads[0].tick);
+    //                RapierWorld.collider_set_memberships(
+    //                   RapierWorld.world,
+    //                   Players[i].PlayerBody.entityHandle,
+    //                   (uint)(CollisionLayer.Player | team)
+    //                   );
+
+    //                Players[i].GetComponent<PlayerNet>().team = team;
+    //                Players[i].GetComponent<PlayerNet>().enabled = true;
+    //            }
+    //            else
+    //            {
+    //                Players[i].latestInputsRecivedTick = statePayloads[0].tick;
+    //            }
+    //            Players[i].latestServerStatePayload = statePayloads[i];
+
+
+
+
+
+    //            //switch (i)
+    //            //{
+    //            //    case 1:
+    //            //        playerColor = Color.red;
+    //            //        break;
+    //            //    case 2:
+    //            //        playerColor = Color.blue;
+    //            //        team = CollisionLayer.TeamB;
+    //            //        break;
+    //            //    case 3:
+    //            //        playerColor = Color.green;
+    //            //        team = CollisionLayer.TeamC;
+    //            //        break;
+    //            //    case 4:
+    //            //        playerColor = Color.grey;
+    //            //        team = CollisionLayer.TeamD;
+    //            //        break;
+
+    //            //}
+    //            //item.PlayerObject.GetComponent<PlayerNet>().playerIcon.color = playerColor;
+    //        }
+    //    }
+
+    //    //for (int i = 0; i < Players.Count; i++)
+    //    //{
+    //    //    if (!Players[i].IsOwner)
+    //    //    {
+    //    //        Players[i].latestInputsRecivedTick = statePayloads[0].tick;
+    //    //    }
+    //    //}
+    //    //if (newClientID != NetworkManager.Singleton.LocalClientId)
+    //    //{
+    //    //    return;
+    //    //}
+    //    //for (int i = 0; i < Players.Count; i++)
+    //    //{
+    //    //    if (Players[i].IsOwner)
+    //    //    {
+    //    //        Players[i].GetComponent<Player>().enabled = true;
+    //    //        Players[i].GetComponent<Player>().syncTick(statePayloads[0].tick);
+    //    //        RapierWorld.collider_set_memberships(
+    //    //           RapierWorld.world,
+    //    //           Players[i].PlayerBody.entityHandle,
+    //    //           (uint)(CollisionLayer.Player | team)
+    //    //           );
+
+    //    //        Players[i].GetComponent<PlayerNet>().team = team;
+    //    //        Players[i].GetComponent<PlayerNet>().enabled = true;
+    //    //    }
+    //    //    else
+    //    //    {
+    //    //        Players[i].latestInputsRecivedTick = statePayloads[0].tick;
+    //    //    }
+
+
+
+    //    //    Players[i].latestServerStatePayload = statePayloads[i];
+    //    }
+    //}
 
     /// <summary>
     /// To avoid rolling back to a tick where some phy object didn't exist yet
     /// </summary>
     public void PromoteTickAsSynced()
     {
-        RapierWorld.world_store_snapshot(RapierWorld.world);
+        ////RapierWorld.world_store_snapshot(RapierWorld.world);
+        ////RapierToUnityDatabase.ROLLBACKsave();
+        GameSyncManager.GameSyncSave();
+
         latestServerStatePayloadTick = tick;
-        foreach (PlayerNet player in Players)
+        foreach (PlayerNet player in GameSyncManager.Players)
         {
             player.latestSyncedMechanicsStatePayload = player.mechanicalState;
         }
@@ -253,7 +343,7 @@ public class ServerManagerNet : NetworkBehaviour
     {
 
         uint latestCommonInputTick = uint.MaxValue;
-        foreach (PlayerNet player in Players)
+        foreach (PlayerNet player in GameSyncManager.Players)
         {
             latestCommonInputTick = latestCommonInputTick > player.latestInputsRecivedTick ? player.latestInputsRecivedTick : latestCommonInputTick;
         }
@@ -303,16 +393,23 @@ public class ServerManagerNet : NetworkBehaviour
         //Debug.Log(rollbackTicksTillSync);
         //Debug.Log(rollbackTicksForProjection);
 
-        if (Players.Count == 0)
+        if (GameSyncManager.Players.Count == 0)
             Debug.Log("eeeeeeeeeeeee");
+
+        ////bool needDatabaseRollback = !RapierToUnityDatabase.IsDatabaseSynced();
 
         /// WORLD STATE AT LAST SYNC
         {
-            RapierWorld.world_restore_snapshot(RapierWorld.world);
-            foreach (PlayerNet player in Players)
-            {
-                player.RestoreState(player.latestSyncedMechanicsStatePayload);
-            }
+            GameSyncManager.GameSyncRestore();
+
+            ////RapierWorld.world_restore_snapshot(RapierWorld.world);
+            ////if (needDatabaseRollback) RapierToUnityDatabase.ROLLBACKrestore();
+            ////foreach (PlayerNet player in Players)
+            ////{
+            ////    player.RestoreState(player.latestSyncedMechanicsStatePayload);
+            ////}
+            ////GameSyncManager.bulletPool.RestoreState();
+            
             ///Debug.Log("PICKED BACK AT " + syncedTick);
         }
         /// syncing
@@ -320,7 +417,7 @@ public class ServerManagerNet : NetworkBehaviour
             short RollbackTicksTillSync = (short)(syncedTick - latestServerStatePayloadTick);
             while (syncedTick <= latestServerStatePayloadTick)
             {
-                foreach (PlayerNet player in Players)
+                foreach (PlayerNet player in GameSyncManager.Players)
                 {
                     short relativeRollbackTicksTillSync = (short)(RollbackTicksTillSync - (player.latestInputsRecivedTick - latestServerStatePayloadTick));
                     player.Tick(relativeRollbackTicksTillSync);
@@ -340,13 +437,17 @@ public class ServerManagerNet : NetworkBehaviour
         //    player.transform.rotation = quaternion.RotateZ(bodyState.rotation);
         //}
         /// NEW LATEST WORLD SYNC
-        foreach (PlayerNet player in Players)
+        foreach (PlayerNet player in GameSyncManager.Players)
         {
+            /// Debuging restore and condition, its supposed to be the same
             player.RestoreState(player.latestServerStatePayload);
             if (player.latestServerStatePayload.playerMechanicsState.ticksTillPistonPushActivation != player.mechanicalState.ticksTillPistonPushActivation) Debug.LogError("ccccccccc");
-            player.UpdateSyncedStates();
+            ////player.UpdateSyncedStates();
         }
-        RapierWorld.world_store_snapshot(RapierWorld.world);
+        GameSyncManager.GameSyncSave();
+        ////ServerManagerNet.bulletPool.SaveState();
+        ////RapierWorld.world_store_snapshot(RapierWorld.world);
+        ////if (needDatabaseRollback) RapierToUnityDatabase.ROLLBACKsave();
         ///Debug.Log("HALTED AT " + latestServerStatePayloadTick);
         syncedTick = ++latestServerStatePayloadTick;
 
@@ -356,7 +457,7 @@ public class ServerManagerNet : NetworkBehaviour
         /// projection
         while (rollbackTicksForProjection < 0)
         {
-            foreach (PlayerNet player in Players)
+            foreach (PlayerNet player in GameSyncManager.Players)
             {
                 short relativeRollbackTicksForProjection = (short)Mathf.Min((rollbackTicksForProjection + (tick - player.latestInputsRecivedTick)),0);
                 //if (temp != (uint)(tick + rollbackTicksForProjection) - 1) Debug.Log(temp);

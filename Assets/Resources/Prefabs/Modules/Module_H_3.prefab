@@ -268,6 +268,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e3a09f2e83ff80d408a2d56cf5b741ef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RapierCompositeShape
+  layers: 2
   friction: 0.5
 --- !u!1 &709881442370079669
 GameObject:
@@ -733,8 +734,8 @@ CompositeCollider2D:
       - {x: -4.996176, y: 6.876643}
       - {x: -5.68761, y: 6.3167315}
       - {x: -6.3167305, y: 5.6876106}
-      - {x: -6.636202, y: 5.293056}
-      - {x: -3.5931349, y: 2.25}
+      - {x: -6.6362033, y: 5.293054}
+      - {x: -3.5931385, y: 2.25}
     - - {x: -0.0000255, y: -8.5}
       - {x: 0.888468, y: -8.453439}
       - {x: 1.7672248, y: -8.31426}
@@ -746,8 +747,8 @@ CompositeCollider2D:
       - {x: 6.3167105, y: -5.687633}
       - {x: 6.636202, y: -5.2930565}
       - {x: 3.5931344, y: -2.25}
-      - {x: -3.5931528, y: -2.2500076}
-      - {x: -6.636204, y: -5.2930946}
+      - {x: -3.5931568, y: -2.2500076}
+      - {x: -6.636205, y: -5.2930923}
       - {x: -6.3167415, y: -5.687599}
       - {x: -5.687622, y: -6.31672}
       - {x: -4.9961886, y: -6.8766336}
@@ -933,7 +934,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &8327332681893361063
 Transform:
   m_ObjectHideFlags: 0
@@ -1580,6 +1581,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e3a09f2e83ff80d408a2d56cf5b741ef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RapierCompositeShape
+  layers: 2
   friction: 0.5
 --- !u!1 &5581567142593370522
 GameObject:
@@ -1591,7 +1593,6 @@ GameObject:
   m_Component:
   - component: {fileID: 5281896363713382775}
   - component: {fileID: 7986565965395058245}
-  - component: {fileID: 7197729051692644896}
   m_Layer: 11
   m_Name: Module_H_3
   m_TagString: Untagged
@@ -1645,52 +1646,6 @@ MonoBehaviour:
   ui: {fileID: 0}
   sliderOscillators: []
   SilderMotorObjects: []
---- !u!61 &7197729051692644896
-BoxCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5581567142593370522}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 1
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0, y: 0}
-    oldSize: {x: 0, y: 0}
-    newSize: {x: 0, y: 0}
-    adaptiveTilingThreshold: 0
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Size: {x: 40, y: 26}
-  m_EdgeRadius: 0
 --- !u!1 &5735625848621669595
 GameObject:
   m_ObjectHideFlags: 0
@@ -2496,6 +2451,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e3a09f2e83ff80d408a2d56cf5b741ef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RapierCompositeShape
+  layers: 2
   friction: 0.5
 --- !u!1 &7098122937929736788
 GameObject:
@@ -2947,6 +2903,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e3a09f2e83ff80d408a2d56cf5b741ef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RapierCompositeShape
+  layers: 2
   friction: 0.5
 --- !u!1 &8162493832097094067
 GameObject:
@@ -3543,6 +3500,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ERods (3)
       objectReference: {fileID: 0}
+    - target: {fileID: 1708764062242690234, guid: 7a9f609923cec9948b63e34782c56ae2, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1843451999254988676, guid: 7a9f609923cec9948b63e34782c56ae2, type: 3}
       propertyPath: m_LocalPosition.x
       value: -4.78
@@ -3617,6 +3578,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ERods (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 1708764062242690234, guid: 7a9f609923cec9948b63e34782c56ae2, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1843451999254988676, guid: 7a9f609923cec9948b63e34782c56ae2, type: 3}
       propertyPath: m_LocalPosition.x
       value: 4.78
@@ -3686,6 +3651,10 @@ PrefabInstance:
     - target: {fileID: 521662083184143720, guid: fb4b19b7054c5f04d8adeb93024ea874, type: 3}
       propertyPath: m_Name
       value: bumper (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 2937588344482232208, guid: fb4b19b7054c5f04d8adeb93024ea874, type: 3}
+      propertyPath: layers
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 3259462000787646212, guid: fb4b19b7054c5f04d8adeb93024ea874, type: 3}
       propertyPath: m_LocalPosition.x
@@ -3773,6 +3742,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ERods (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 1708764062242690234, guid: 7a9f609923cec9948b63e34782c56ae2, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1843451999254988676, guid: 7a9f609923cec9948b63e34782c56ae2, type: 3}
       propertyPath: m_LocalPosition.x
       value: -4.78
@@ -3847,6 +3820,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ERods
       objectReference: {fileID: 0}
+    - target: {fileID: 1708764062242690234, guid: 7a9f609923cec9948b63e34782c56ae2, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1843451999254988676, guid: 7a9f609923cec9948b63e34782c56ae2, type: 3}
       propertyPath: m_LocalPosition.x
       value: 4.78
@@ -3916,6 +3893,10 @@ PrefabInstance:
     - target: {fileID: 521662083184143720, guid: fb4b19b7054c5f04d8adeb93024ea874, type: 3}
       propertyPath: m_Name
       value: bumper
+      objectReference: {fileID: 0}
+    - target: {fileID: 2937588344482232208, guid: fb4b19b7054c5f04d8adeb93024ea874, type: 3}
+      propertyPath: layers
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 3259462000787646212, guid: fb4b19b7054c5f04d8adeb93024ea874, type: 3}
       propertyPath: m_LocalPosition.x
@@ -4051,6 +4032,26 @@ PrefabInstance:
       propertyPath: m_Name
       value: ModuleBounds (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 3414628774877695691, guid: dc4629787d1da944c9f6929bc7cb3d45, type: 3}
+      propertyPath: layers
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3963590699933370931, guid: dc4629787d1da944c9f6929bc7cb3d45, type: 3}
+      propertyPath: layers
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4568107370772811447, guid: dc4629787d1da944c9f6929bc7cb3d45, type: 3}
+      propertyPath: layers
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4996967278936558686, guid: dc4629787d1da944c9f6929bc7cb3d45, type: 3}
+      propertyPath: layers
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5237868747532842561, guid: dc4629787d1da944c9f6929bc7cb3d45, type: 3}
+      propertyPath: layers
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 5250262299613477064, guid: dc4629787d1da944c9f6929bc7cb3d45, type: 3}
       propertyPath: isEnabled
       value: 1
@@ -4066,6 +4067,10 @@ PrefabInstance:
     - target: {fileID: 7571806771500399075, guid: dc4629787d1da944c9f6929bc7cb3d45, type: 3}
       propertyPath: isEnabled
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8666071936450264097, guid: dc4629787d1da944c9f6929bc7cb3d45, type: 3}
+      propertyPath: layers
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8766644581069264630, guid: dc4629787d1da944c9f6929bc7cb3d45, type: 3}
       propertyPath: isEnabled

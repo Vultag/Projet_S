@@ -5,12 +5,14 @@ public class RapierCompositeShape : MonoBehaviour
 {
 
     [SerializeField]
+    private CollisionLayer layers;
+    [SerializeField]
     private float friction;
 
     void Awake()
     {
 
-        if (!TryGetComponent<CompositeCollider2D>(out var composite)) Debug.Log("NO COMPOSITE");
+        if (!TryGetComponent<CompositeCollider2D>(out var composite)) Debug.Log("NOT COMPOSITE");
 
         if (composite.attachedRigidbody == null)
             Debug.Log(" COMPOND WITH NO BODY");
@@ -35,7 +37,7 @@ public class RapierCompositeShape : MonoBehaviour
         Vector2[] points = new Vector2[count.ToUInt64()];
         composite.GetPath(0, points);
 
-        RapierWorld.body_add_polyline_collider(RapierWorld.world, handle, points, count,friction);
+        RapierWorld.body_add_polyline_collider(RapierWorld.world, handle, points, count,friction,(uint)layers);
 
         foreach (var box in GetComponentsInChildren<BoxCollider2D>())
         {

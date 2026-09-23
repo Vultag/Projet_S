@@ -20,12 +20,12 @@ TagManager:
   - Obstacle
   - projectiles
   - dynamicObstacle
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - PlayerAccessories
+  - PlayerOnly
+  - TEAM A
+  - TEAM B
+  - TEAM C
+  - TEAM D
   - 
   - 
   - 

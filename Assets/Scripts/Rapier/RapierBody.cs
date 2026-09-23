@@ -46,14 +46,19 @@ public class RapierBody : MonoBehaviour
             isEnabled
             );
 
-        var col_listeners = GetComponents<IRapierCollisionListener>();
 
-        if (!RapierWorld.unityToRapierEntityMap.TryAdd(entityHandle, new EntityData
+
+        var col_listeners = GetComponents<IRapierCollisionListener>();
+        var trig_listeners = GetComponents<IRapierTriggerListener>();
+
+
+        GameSyncManager.rapierToUnityDatabase.Add(entityHandle, new EntityData
         {
             GameObject = gameObject,
             Transform = transform,
-            col_listener = col_listeners
-        })) Debug.Log("coundt add " + entityHandle);
+            col_listener = col_listeners,
+            trig_listener = trig_listeners
+        });
 
         transform.SetParent(null);
 

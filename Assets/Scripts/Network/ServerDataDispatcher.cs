@@ -29,7 +29,7 @@ public class ServerDataDispatcher : MonoBehaviour
 
         {
             byte i = 0;
-            foreach (PlayerNet playerNet in serverManagerNet.Players)
+            foreach (PlayerNet playerNet in GameSyncManager.Players)
             {
                 serverManager.statePayloads[i] = new StatePayload
                 {
@@ -57,6 +57,7 @@ public class ServerDataDispatcher : MonoBehaviour
                     //},
                     playerMechanicsState = playerNet.mechanicalState
                 };
+                if (playerNet.mechanicalState.ticksTillPistonPushActivation == 0) Debug.Log("44454");
                 i++;
             }
         }

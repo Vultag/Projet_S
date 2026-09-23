@@ -1,65 +1,47 @@
 using UnityEngine;
+using UnityEngine.LowLevelPhysics2D;
 
 public class RapierCircleShape : MonoBehaviour
 {
 
     [HideInInspector]
-    public ulong entityHandle;
+    public ulong colliderHandle;
+
+    [SerializeField]
+    private CollisionLayer layers;
 
     [SerializeField] 
     private float radius;
     [SerializeField]
     private float friction;
+    [SerializeField]
+    bool isSensor;
+
     void Awake()
     {
 
         if(TryGetComponent<RapierBody>(out var rb))
         {
             var col_listeners = rb.GetComponents<IRapierCollisionListener>();
+            var trig_listeners = rb.GetComponents<IRapierTriggerListener>();
 
-            RapierWorld.body_add_circle_collider(
+            colliderHandle = RapierWorld.body_add_circle_collider(
                 RapierWorld.world, 
                 rb.entityHandle, 
                 radius, 0, 0, friction, 
-                (byte)gameObject.layer,
-                col_listeners.Length > 0
+                (uint)layers,
+                col_listeners.Length > 0 | trig_listeners.Length > 0,
+                isSensor
                 );
+            //Debug.Log((gameObject.layer) + gameObject.name);
         }
         else
         {
-            var trig_listeners = GetComponents<IRapierTriggerListener>();
-
-            bool tigger_listen = false;
-            foreach (var listener in trig_listeners)
-            {
-                if (listener is MonoBehaviour mono && mono.isActiveAndEnabled)
-                {
-                    tigger_listen = true;
-                    break;
-                }
-            }
-
-
-            if (!tigger_listen)
-            {
-                Debug.Log("NO LISTENER");
-                return;
-            }
-
-            entityHandle = RapierWorld.add_standalone_circle_collider(
-                RapierWorld.world, radius, transform.position.x, transform.position.y, (byte)gameObject.layer, tigger_listen);
-
-            if (!RapierWorld.unityToRapierEntityMap.TryAdd(entityHandle, new EntityData
-            {
-                GameObject = gameObject,
-                Transform = transform,
-                trig_listener = trig_listeners
-            })) Debug.Log("coundt add " + entityHandle);
-
+            Debug.LogError("Collider with no body " + gameObject.name);
         }
 
 
-        RapierWorld.shape_set_enabled(RapierWorld.world, entityHandle, isActiveAndEnabled);
+        RapierWorld.shape_set_enabled(RapierWorld.world, colliderHandle, isActiveAndEnabled);
 
     }
 

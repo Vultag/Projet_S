@@ -470,11 +470,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 149f040a22a63ee43af166f14aeb252d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RapierBoxShape
-  entityHandle: 0
+  colliderHandle: 0
+  layers: 4
   dimentions:
     x: 1
     y: 1
   friction: 0
+  isSensor: 0
 --- !u!1 &7561806407964601291
 GameObject:
   m_ObjectHideFlags: 0

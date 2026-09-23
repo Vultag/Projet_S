@@ -49,7 +49,8 @@ struct DestroyBodyCommand
             world,
             handle
         );
-        RapierWorld.unityToRapierEntityMap.Remove(handle);
+        ////RapierToUnityDatabase.
+        ////RapierWorld.unityToRapierEntityMap.Remove(handle);
 
     }
 }

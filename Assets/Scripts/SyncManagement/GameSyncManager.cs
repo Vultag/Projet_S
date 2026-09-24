@@ -68,6 +68,7 @@ public static class GameSyncManager
 
         foreach (PlayerNet player in Players)
         {
+            if (player.latestSyncedMechanicsStatePayload.ticksTillPistonPushActivation == 0) Debug.LogError("ppppppppppppppppppppp");
             player.RestoreState(player.latestSyncedMechanicsStatePayload);
         }
     }

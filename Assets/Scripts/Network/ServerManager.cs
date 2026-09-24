@@ -51,6 +51,14 @@ public class ServerManager : MonoBehaviour
         player4RigidbodyStates = new();
         dataDispatcher = this.AddComponent<ServerDataDispatcher>();
         gameManager = FindFirstObjectByType<GameManager>(FindObjectsInactive.Include);
+        for (int i = 0; i < statePayloads.Length; i++)
+        {
+            statePayloads[i] = new StatePayload
+            {
+                tick = 0,
+                playerMechanicsState = MechanicsState.Default(),
+            };
+        }
     }
 
 
@@ -151,7 +159,7 @@ public class ServerManager : MonoBehaviour
 
         switch (GameSyncManager.Players.Count)
         {
-            case 1:
+            case 0:
                 serverManagerNet.playersInitialisationData.Add(new PlayerInitialisationData
                 {
                     playerColor = Color.red,
@@ -160,7 +168,7 @@ public class ServerManager : MonoBehaviour
                 newPlayerNet.playerIcon.color = Color.red;
                 newPlayerNet.team = CollisionLayer.TeamA;
                 break;
-            case 2:
+            case 1:
                 serverManagerNet.playersInitialisationData.Add(new PlayerInitialisationData
                 {
                     playerColor = Color.blue,
@@ -169,7 +177,7 @@ public class ServerManager : MonoBehaviour
                 newPlayerNet.playerIcon.color = Color.blue;
                 newPlayerNet.team = CollisionLayer.TeamB;
                 break;
-            case 3:
+            case 2:
                 serverManagerNet.playersInitialisationData.Add(new PlayerInitialisationData
                 {
                     playerColor = Color.green,
@@ -178,7 +186,7 @@ public class ServerManager : MonoBehaviour
                 newPlayerNet.playerIcon.color = Color.green;
                 newPlayerNet.team = CollisionLayer.TeamC;
                 break;
-            case 4:
+            case 3:
                 serverManagerNet.playersInitialisationData.Add(new PlayerInitialisationData
                 {
                     playerColor = Color.grey,
@@ -208,26 +216,8 @@ public class ServerManager : MonoBehaviour
                 playerMechanicsState = MechanicsState.Default(),
             },
             newPlayerNet.OwnerClientId, 
-            new ClientRpcParams { Send = new ClientRpcSendParams { TargetClientIds = NetworkManager.Singleton.ConnectedClientsIds } }
+            new ClientRpcParams { Send = new ClientRpcSendParams { TargetClientIds = targetClientIds } }
             );
-
-        //switch (playerCount)
-        //{
-        //    case 1:
-        //        newPlayerNet.gameObject.GetComponentInChildren<ObjectsStatesCollector>().playerRigidbodyStates = player1RigidbodyStates;
-        //        break;
-        //    case 2:
-        //        newPlayerNet.gameObject.GetComponentInChildren<ObjectsStatesCollector>().playerRigidbodyStates = player2RigidbodyStates;
-        //        break;
-        //    case 3:
-        //        newPlayerNet.gameObject.GetComponentInChildren<ObjectsStatesCollector>().playerRigidbodyStates = player3RigidbodyStates;
-        //        break;
-        //    case 4:
-        //        newPlayerNet.gameObject.GetComponentInChildren<ObjectsStatesCollector>().playerRigidbodyStates = player4RigidbodyStates;
-        //        break;
-        //}
-
-        //serverManagerNet.SyncPlayersClientRpc(statePayloads, newPlayerNet.OwnerClientId);
 
     }
 }

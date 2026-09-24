@@ -41,7 +41,6 @@ public class Bullet : MonoBehaviour, IRapierTriggerListener
 
         if (GameSyncManager.damageableDatabase.TryGet(EntityEnteringID, out IDamageable damageable))
         {
-            Debug.Log(EntityEntering.name);
             damageable.TakeDamage(15f);
         }
         else

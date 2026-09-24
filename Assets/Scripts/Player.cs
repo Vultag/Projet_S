@@ -64,11 +64,11 @@ public class Player : MonoBehaviour
 
     private GameManager gameManager;
 
-    public void syncTick(uint atTick)
-    {
-        ServerManagerNet.tick = atTick; 
-        //Debug.Log("sync " + atTick);
-    }
+    //public void syncTick(uint atTick)
+    //{
+    //    ServerManagerNet.tick = atTick;
+    //    //Debug.Log("sync " + atTick);
+    //}
 
 
     private void Start()
@@ -80,12 +80,9 @@ public class Player : MonoBehaviour
         //Debug.Log(playerNet.NetworkObjectId);
 
 
-        playerNet.inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
-        //for (int i = 0; i < PlayerNet.PayloadRBufferSize; i++)
-        //{
-        //    playerNet.inputPayloadRBuffer.Write(new InputPayload(0));
-        //}
-        playerNet.inputPayloadRBufferTransmitor = new RingBuffer<InputPayload>(PlayerNet.PayloadTransmiotorRBufferSize);
+        ////playerNet.inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
+        ////playerNet.inputPayloadRBufferTransmitor = new RingBuffer<InputPayload>(PlayerNet.PayloadTransmiotorRBufferSize);
+
         //for (int i = 0; i < PlayerNet.PayloadTransmiotorRBufferSize; i++)
         //{
         //    playerNet.inputPayloadRBuffer.Write(new InputPayload(0));
@@ -105,7 +102,10 @@ public class Player : MonoBehaviour
         ui.gameObject.SetActive(true);
 
         serverManagerNet = FindFirstObjectByType<ServerManagerNet>(FindObjectsInactive.Include).GetComponent<ServerManagerNet>();
+        //serverManagerNet.PromoteTickAsSynced();
 
+        //GameSyncManager.GameSyncSave();
+        //GameSyncManager.GameSyncSave();
         ///activeInputPayload = InputPayload.Default(0);
 
         // RapierWorld.PhysicsStep(1/60f);
@@ -164,7 +164,7 @@ public class Player : MonoBehaviour
         //        linearVelocity = playerNet.CogBody.linearVelocity,
         //        angularVelocity = playerNet.CogBody.angularVelocity,
         //    },
-        //    ticksTillPistonPushActivation = playerNet.ticksTillPistonPushActivation,
+        //    ticksTillPistonPushActivation = playerNet.ticksTillPistonPushActivation, 
         //    activeRevertCooldown = playerNet.activeRevertCooldown,
         //    revertCooldown = playerNet.revertCooldown,
         //    pistonPushOrPull = playerNet.pistonPushOrPull,

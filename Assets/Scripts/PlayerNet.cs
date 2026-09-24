@@ -228,12 +228,16 @@ public class PlayerNet : NetworkBehaviour, IDamageable
         //Debug.Log($"Spawned | IsOwner={IsOwner} | OwnerClientId={OwnerClientId} | LocalClientId={NetworkManager.Singleton.LocalClientId}");
 
         GameSyncManager.damageableDatabase.Add(PlayerBody.entityHandle, this);
+        mechanicalState = MechanicsState.Default();
+        latestSyncedMechanicsStatePayload = MechanicsState.Default();
+        latestServerStatePayload.playerMechanicsState = MechanicsState.Default();
+
+        //Debug.Log("initiate at tick "+ ServerManagerNet.tick + team);
 
         /// TEMP -> SETUP IN MENU
         equipedPowerUpMap[0] = PowerUp.GraplinHook;
         equipedPowerUpMap[1] = PowerUp.Propeller;
         equipedPowerUpMap[4] = PowerUp.AutoTurret;
-
 
         powerUps = new PowerUpInterface[8];
         powerUpsGB = new GameObject[8];
@@ -283,28 +287,14 @@ public class PlayerNet : NetworkBehaviour, IDamageable
             }
         }
         Resources.UnloadUnusedAssets();
-        GameSyncManager.GameSyncSave();
-        ////RapierWorld.world_store_snapshot(RapierWorld.world);
-        ////RapierToUnityDatabase.ROLLBACKsave();
-    }
+        var servernet = FindFirstObjectByType<ServerManagerNet>(FindObjectsInactive.Include).GetComponent<ServerManagerNet>();
 
-    public override void OnNetworkSpawn()
-    {
-        player = GetComponent<Player>();
-        clientPlayer = GetComponent<ClientPlayer>();
-        mechanicalState = MechanicsState.Default();
 
-        latestSyncedMechanicsStatePayload = MechanicsState.Default();
-        latestServerStatePayload.playerMechanicsState = MechanicsState.Default();
+        GameSyncManager.Players.Add(this);
 
-        ///graplingHook = powerUps[(int)PowerUp.GraplinHook-1].ga.GetComponent<Grapling>();
-
-        //var ui = FindFirstObjectByType<UI>(FindObjectsInactive.Include);
-
-        //PushM = new JointMotor2D { motorSpeed = 100, maxMotorTorque = Pistonjoint.motor.maxMotorTorque };
-        //PullM = Pistonjoint.motor;
-        //Physics2D.IgnoreCollision(PlayerBody.GetComponent<Collider2D>(), Pistonjoint.GetComponent<Collider2D>(), true);
-
+        if(NetworkManager.Singleton.ConnectedClientsIds.Count == GameSyncManager.Players.Count)
+            servernet.PromoteTickAsSynced();
+     
         if (IsServer)
         {
             Destroy(player);
@@ -312,6 +302,7 @@ public class PlayerNet : NetworkBehaviour, IDamageable
         }
         else if (IsOwner)
         {
+            player.enabled = true;
             Destroy(clientPlayer);
         }
         else
@@ -320,6 +311,35 @@ public class PlayerNet : NetworkBehaviour, IDamageable
             clientPlayer.enabled = true;
         }
 
+        //if (!servernet.syncedThisFrame)
+        //{ 
+        //    servernet.PromoteTickAsSynced();
+        //} 
+
+        ////RapierWorld.world_store_snapshot(RapierWorld.world);
+        ////RapierToUnityDatabase.ROLLBACKsave();
+        ///
+
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        player = GetComponent<Player>();
+        clientPlayer = GetComponent<ClientPlayer>();
+
+
+
+        inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
+        inputPayloadRBufferTransmitor = new RingBuffer<InputPayload>(PlayerNet.PayloadTransmiotorRBufferSize);
+
+
+        ///graplingHook = powerUps[(int)PowerUp.GraplinHook-1].ga.GetComponent<Grapling>();
+
+        //var ui = FindFirstObjectByType<UI>(FindObjectsInactive.Include);
+
+        //PushM = new JointMotor2D { motorSpeed = 100, maxMotorTorque = Pistonjoint.motor.maxMotorTorque };
+        //PullM = Pistonjoint.motor;
+        //Physics2D.IgnoreCollision(PlayerBody.GetComponent<Collider2D>(), Pistonjoint.GetComponent<Collider2D>(), true);
 
         //graplingHookActive.OnValueChanged += (_, v) => UpdatePowerupClientRpc(PowerUps.GraplinHook, v);
         //propellerActive.OnValueChanged += (_, v) => UpdatePowerupClientRpc(PowerUps.Propeller, v);
@@ -631,7 +651,7 @@ public class PlayerNet : NetworkBehaviour, IDamageable
             i--;
             //Debug.Log(((transmitorHead - i) + PlayerNet.PayloadTransmiotorRBufferSize) % PlayerNet.PayloadTransmiotorRBufferSize);
             inputPayloadRBuffer.Write(inputPayloadTransmitor[((transmitorHead - i)+ PlayerNet.PayloadTransmiotorRBufferSize) % PlayerNet.PayloadTransmiotorRBufferSize]);
-            //if (inputPayloadRBuffer.Read(0).pistonPush) Debug.Log("push recived at " + Time.realtimeSinceStartup);
+            //if (inputPayloadRBuffer.Read(0).action1 == Action.Push) Debug.Log("push recived at " + Time.realtimeSinceStartup);
         }
         latestInputsRecivedTick = tick;
     }

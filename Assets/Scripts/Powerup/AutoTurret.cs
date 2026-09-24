@@ -1,5 +1,6 @@
 using Unity.Mathematics;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 public class AutoTurret : MonoBehaviour,PowerUpInterface
 {
@@ -28,12 +29,12 @@ public class AutoTurret : MonoBehaviour,PowerUpInterface
                   (uint)((CollisionLayer.TeamA | CollisionLayer.TeamB | CollisionLayer.TeamC | CollisionLayer.TeamD) & ~team)
                   );
 
-        
+
 
         if (closestPlayerhandle != 0)
         {
+            //Debug.Log(team);
             GameSyncManager.rapierToUnityDatabase.TryGet(closestPlayerhandle, out var entity);
-            //Debug.Log(entity.GameObject.name);
 
             var closestPlayerState = RapierWorld.body_get_state(RapierWorld.world, closestPlayerhandle);
             var playerBodyState = RapierWorld.body_get_state(RapierWorld.world, playerBodyHandle);

@@ -30,7 +30,6 @@ public class ConfigureNetwork : MonoBehaviour
         if (NetworkManager.Singleton.IsServer)
         {
             serverManagerGB.GetComponent<ServerManager>().enabled = true;
-            GameSyncManager.Players.Add(playerObj.GetComponent<PlayerNet>());
             //int playerCount = GameSyncManager.Players.Count;
             serverManagerGB.GetComponent<ServerManager>().playerJoin(playerObj.GetComponent<PlayerNet>());
             ///playerObj.GetComponentInChildren<ObjectsStatesCollector>().enabled = true;

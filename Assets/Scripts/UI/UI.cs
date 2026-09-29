@@ -127,14 +127,15 @@ public class UI : MonoBehaviour
 
                     GameObject GraplinHookUIPrefab = Resources.Load<GameObject>("Prefabs/PowerUpsUI/GraplingHookUIButton");
                     GameObject GraplinHookUIInstance = Instantiate(GraplinHookUIPrefab, powerUpsUISlot[i].transform);
-                    GraplinHookUIInstance.GetComponent<Button>().onClick.AddListener(() => SelectPowerUp(PowerUp.GraplinHook));
+                    int GraplinHookIdx = i;
+                    GraplinHookUIInstance.GetComponent<Button>().onClick.AddListener(() => SelectPowerUp(GraplinHookIdx));
                     var GraplinHookUiLink = playerNet.powerUpsGB[i].gameObject.AddComponent<PowerUpUiLink>();
                     GraplinHookUiLink.UIobject = GraplinHookUIInstance.transform.GetChild(0).gameObject;
 
                     GraplinHookUIPrefab = null;
 
                     GameObject GraplinHookUICancelInstance = Instantiate(CancelPowerUpUIPrefab, GraplinHookUIInstance.transform);
-                    GraplinHookUICancelInstance.GetComponent<Button>().onClick.AddListener(() => CancelPowerUp(PowerUp.GraplinHook));
+                    GraplinHookUICancelInstance.GetComponent<Button>().onClick.AddListener(() => CancelPowerUp(GraplinHookIdx));
                     var GraplinHookCancelUiLink = playerNet.powerUpsGB[i].GetComponent<Grapling>().hook.gameObject.AddComponent<PowerUpUiLink>();
                     GraplinHookCancelUiLink.UIobject = GraplinHookUICancelInstance;
 
@@ -143,7 +144,8 @@ public class UI : MonoBehaviour
 
                     GameObject PropellerUIPrefab = Resources.Load<GameObject>("Prefabs/PowerUpsUI/PropellerUIButton");
                     GameObject PropellerUIInstance = Instantiate(PropellerUIPrefab, powerUpsUISlot[i].transform);
-                    PropellerUIInstance.GetComponent<Button>().onClick.AddListener(() => SelectPowerUp(PowerUp.Propeller));
+                    int PropellerIdx = i;
+                    PropellerUIInstance.GetComponent<Button>().onClick.AddListener(() => SelectPowerUp(PropellerIdx));
                     var PropellerSelectUiLink = playerNet.powerUpsGB[i].gameObject.AddComponent<PowerUpUiLink>();
                     PropellerSelectUiLink.UIobject = PropellerUIInstance.transform.GetChild(0).gameObject;
 
@@ -164,7 +166,18 @@ public class UI : MonoBehaviour
                     autoTurretDetection.player = player;
                     autoTurretDetection.powerUpIdx = i;
 
-                    PropellerUIPrefab = null;
+                    AutoTurretUIPrefab = null;
+
+                    break;
+                case PowerUp.Rifle:
+
+                    GameObject RifleUIPrefab = Resources.Load<GameObject>("Prefabs/PowerUpsUI/RifleUIButton");
+                    GameObject RifleUIInstance = Instantiate(RifleUIPrefab, powerUpsUISlot[i].transform);
+                    RifleUIInstance.GetComponent<Image>().color = Color.lightGray;
+                    int RifleIdx = i;
+                    RifleUIInstance.GetComponent<Button>().onClick.AddListener(() => SelectPowerUp(RifleIdx));
+
+                    RifleUIPrefab = null;
 
                     break;
             }
@@ -222,7 +235,7 @@ public class UI : MonoBehaviour
         {
             activeFinger = fingerIdx;
 
-            switch (playerNet.mechanicalState.selectedPowerUp)
+            switch (playerNet.mechanicalState.selectedPowerUpIdx >= 0? playerNet.equipedPowerUpMap[playerNet.mechanicalState.selectedPowerUpIdx] : 0)
             {
                 case PowerUp.None:
 
@@ -234,6 +247,10 @@ public class UI : MonoBehaviour
                 case PowerUp.Propeller:
                     aimAction = true;
                     player.RegisterAction(Action.PowerUpAction1, Vector2.zero);
+                    break;
+                case PowerUp.Rifle:
+                    ///aimAction = true;
+                    player.RegisterAction(Action.PowerUpAction1, Camera.main.ScreenToWorldPoint(pos) - transform.position);
                     break;
             }
         }
@@ -248,7 +265,7 @@ public class UI : MonoBehaviour
         //if (!uiRaycast.PointerOverUI(pos))
         {
 
-            switch (playerNet.mechanicalState.selectedPowerUp)
+            switch (playerNet.mechanicalState.selectedPowerUpIdx >= 0 ? playerNet.equipedPowerUpMap[playerNet.mechanicalState.selectedPowerUpIdx] : 0)
             {
                 case PowerUp.None:
 
@@ -257,7 +274,9 @@ public class UI : MonoBehaviour
                     player.RegisterAction(Action.PowerUpAction1, Camera.main.ScreenToWorldPoint(pos) - transform.position);
                     break;
                 case PowerUp.Propeller:
-                    aimAction = false;
+                    player.RegisterAction(Action.PowerUpAction2, Vector2.zero);
+                    break;
+                case PowerUp.Rifle:
                     player.RegisterAction(Action.PowerUpAction2, Vector2.zero);
                     break;
             }
@@ -266,18 +285,18 @@ public class UI : MonoBehaviour
         activeFinger = 0;
     }
 
-    public void SelectPowerUp(PowerUp powerUp)
+    public void SelectPowerUp(int powerUpIdx)
     {
-        if (playerNet.mechanicalState.selectedPowerUp == powerUp) powerUp = 0;
-        player.RegisterAction(Action.ChangeSelectedPowerUp, new Vector2((int)powerUp, 0));
+        if (playerNet.mechanicalState.selectedPowerUpIdx == powerUpIdx) powerUpIdx = -1;
+        player.RegisterAction(Action.ChangeSelectedPowerUp, new Vector2(powerUpIdx, 0));
     }
     public void ChangePassivePowerUp(int powerUpIdx)
     {
         player.RegisterAction(Action.ChangePassivePowerUp, new Vector2(powerUpIdx, 0));
     }
-    public void CancelPowerUp(PowerUp powerUp)
+    public void CancelPowerUp(int powerUpIdx)
     {
-        player.RegisterAction(Action.CancelPowerUp, new Vector2((int)powerUp, 0));
+        player.RegisterAction(Action.CancelPowerUp, new Vector2(powerUpIdx, 0));
     }
 
     public void LeftDirPressed()

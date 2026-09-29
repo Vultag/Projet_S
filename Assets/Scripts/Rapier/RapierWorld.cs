@@ -535,6 +535,7 @@ internal static class RapierWorld
         for (int i = 0; i < trans_lenght; i++)
         {
             GameSyncManager.rapierToUnityDatabase.TryGet(TransformUpdates[i].EntityId, out var body);
+            if (body == null) Debug.Log(TransformUpdates[i].EntityId);
             body.Transform.SetPositionAndRotation(new Vector3(TransformUpdates[i].Position.x, TransformUpdates[i].Position.y, 0), quaternion.RotateZ(TransformUpdates[i].Rotation));
         }
     }

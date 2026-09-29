@@ -25,13 +25,12 @@ public class ConfigureNetwork : MonoBehaviour
 
     void OnClientConnected(ulong clientId)
     {
-        NetworkObject playerObj = NetworkManager.Singleton.ConnectedClients[clientId].PlayerObject;
+        ///NetworkObject playerObj = NetworkManager.Singleton.ConnectedClients[clientId].PlayerObject;
 
         if (NetworkManager.Singleton.IsServer)
         {
             serverManagerGB.GetComponent<ServerManager>().enabled = true;
-            //int playerCount = GameSyncManager.Players.Count;
-            serverManagerGB.GetComponent<ServerManager>().playerJoin(playerObj.GetComponent<PlayerNet>());
+            serverManagerGB.GetComponent<ServerManager>().playerJoin(clientId);
             ///playerObj.GetComponentInChildren<ObjectsStatesCollector>().enabled = true;
             
         }

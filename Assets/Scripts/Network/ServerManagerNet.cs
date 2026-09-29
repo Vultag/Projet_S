@@ -160,6 +160,12 @@ public class ServerManagerNet : NetworkBehaviour
     [ClientRpc(Delivery = RpcDelivery.Reliable)]
     public void playerJoinClientRpc(PlayerInitialisationData playerInitialisationData, StatePayload statePayload, ulong newClientID, ClientRpcParams rpcParams)
     {
+        //GameObject newPlayer = Instantiate(PlayerPrefab);
+        //Debug.Log("azeaze");
+
+        //NetworkObject networkObject = newPlayer.GetComponent<NetworkObject>();
+        //networkObject.SpawnAsPlayerObject(newClientID);
+        //networkObject.NetworkShow(newClientID);
 
         NetworkManager.Singleton.ConnectedClients.TryGetValue(newClientID, out var newPlayerNetwork);
         var newPlayer = newPlayerNetwork.PlayerObject.GetComponent<PlayerNet>();
@@ -296,61 +302,13 @@ public class ServerManagerNet : NetworkBehaviour
     /// </summary>
     public void PromoteTickAsSynced()
     {
-        ////RapierWorld.world_store_snapshot(RapierWorld.world);
-        ////RapierToUnityDatabase.ROLLBACKsave();
-        //Debug.LogWarning(GameSyncManager.Players.Count);
-        //Debug.LogWarning(NetworkManager.Singleton.ConnectedClientsIds.Count);
-        //if (GameSyncManager.Players.Count == NetworkManager.Singleton.ConnectedClientsIds.Count && !syncedThisFrame)
-        {
-
-            //Debug.Log("rrrrrr  " + tick);
-            GameSyncManager.GameSyncSave();
-            latestServerStatePayloadTick = tick;
-        }
-        //if (!syncedThisFrame)
-        //{
-        //}
-
-        //foreach (PlayerNet player in GameSyncManager.Players)
-        //{
-        //    player.latestSyncedMechanicsStatePayload = player.mechanicalState;
-        //}
+        //Debug.Log("rrrrrr  " + tick);
+        //Debug.LogError("ROLLBACKsave");
+        GameSyncManager.GameSyncSave();
+        latestServerStatePayloadTick = tick;
+        
     }
 
-    //[ClientRpc(Delivery = RpcDelivery.Unreliable)]
-    //public void SendClientsInputsClientRpc(InputPayload[] inputPayloads)
-    //{
-    //    for (int i = 0; i < Players.Count; i++)
-    //    {
-    //        /// discard outdated inputpayloads
-    //        if (Players[i].latestServerInputPayload.tick > inputPayloads[i].tick)
-    //        {
-    //            return;
-    //        }
-    //        Players[i].latestServerInputPayload = inputPayloads[i];
-    //    }
-    //}
-
-
-    //public bool ShouldReconcile(short rollbackTicks)
-    //{
-    //    /// SHOULD RECONCILE
-    //    foreach (PlayerNet playerNet in Players)
-    //    {
-    //        var dist = Vector2.Distance(playerNet.latestServerStatePayload.playerPhyState.position, playerNet.statePayloadRBuffer.Read((short)(rollbackTicks)).playerPhyState.position);
-
-    //        if ((Vector2.Distance(playerNet.latestServerStatePayload.playerPhyState.position, playerNet.statePayloadRBuffer.Read((short)(rollbackTicks)).playerPhyState.position) > 0.05f))
-    //            return true;
-    //    }
-    //    return false;
-
-    //    //foreach (PlayerNet playerNet in Players)
-    //    //{
-    //    //    if (Mathf.Abs(playerNet.latestServerStatePayload.playerPhyState.rotation - playerNet.statePayloadRBuffer.Read((short)(rollbackTicks)).playerPhyState.rotation) > 0.05f)
-    //    //        return true;
-    //    //}
-    //    //return false;
-    //}
 
     public void Reconciliation()
     {
@@ -365,6 +323,13 @@ public class ServerManagerNet : NetworkBehaviour
         {
             return;
         }
+
+        //Debug.Log(GameSyncManager.Players.Count);
+        //foreach (PlayerNet player in GameSyncManager.Players)
+        //{
+        //    Debug.Log(player.);
+        //}
+
 
         ///debug
         /*
@@ -427,9 +392,12 @@ public class ServerManagerNet : NetworkBehaviour
         {
             /// Debuging restore and condition, its supposed to be the same
             player.RestoreState(player.latestServerStatePayload);
+
             if (player.latestServerStatePayload.playerMechanicsState.ticksTillPistonPushActivation != player.mechanicalState.ticksTillPistonPushActivation) Debug.LogError("ccccccccc");
             ////player.UpdateSyncedStates();
         }
+
+        //Debug.Log("ROLLBACKsave");
         GameSyncManager.GameSyncSave();
         syncedTick = ++latestServerStatePayloadTick;
 

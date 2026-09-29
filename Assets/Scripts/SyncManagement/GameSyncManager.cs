@@ -31,6 +31,8 @@ public static class GameSyncManager
 
     public static void GameSyncSave()
     {
+        //if(GameSyncManager.Players.Count == 2)
+        //    Debug.LogError("save");
         RapierWorld.world_store_snapshot(RapierWorld.world);
         bulletPool.SaveState();
 
@@ -53,11 +55,14 @@ public static class GameSyncManager
 
     public static void GameSyncRestore()
     {
+        //Debug.LogError("restore");
         RapierWorld.world_restore_snapshot(RapierWorld.world);
+        
         bulletPool.RestoreState();
 
         if (!rapierToUnityDatabase.IsDatabaseSynced())
         {
+            //Debug.Log("ROLLBACKrestore");
             rapierToUnityDatabase.ROLLBACKrestore();
         }
         /// have to do it regardless for damageable fields
@@ -68,7 +73,6 @@ public static class GameSyncManager
 
         foreach (PlayerNet player in Players)
         {
-            if (player.latestSyncedMechanicsStatePayload.ticksTillPistonPushActivation == 0) Debug.LogError("ppppppppppppppppppppp");
             player.RestoreState(player.latestSyncedMechanicsStatePayload);
         }
     }

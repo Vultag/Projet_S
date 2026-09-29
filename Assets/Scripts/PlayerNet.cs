@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using NUnit.Framework.Internal;
 using Unity.Collections;
 using Unity.Netcode;
@@ -40,7 +41,8 @@ public struct MechanicsState : INetworkSerializable
     public byte pistonPushArmed;
     public float pistonAngle;
 
-    public PowerUp selectedPowerUp;
+    public int selectedPowerUpIdx;
+    //public PowerUp selectedPowerUp;
 
     //public byte powerUp1State;
     //public byte powerUp2State;
@@ -64,8 +66,7 @@ public struct MechanicsState : INetworkSerializable
             pistonPushOrPull = 0,
             pistonPushArmed = 0,
             pistonAngle = 0,
-            //PackedPowerUpsStates = 0,
-            //activePowerUp = 0,
+            selectedPowerUpIdx = -1,
             energy = 0,
         };
     }
@@ -78,7 +79,7 @@ public struct MechanicsState : INetworkSerializable
         serializer.SerializeValue(ref pistonPushArmed);
         serializer.SerializeValue(ref pistonAngle);
 
-        serializer.SerializeValue(ref selectedPowerUp);
+        serializer.SerializeValue(ref selectedPowerUpIdx);
 
         //serializer.SerializeValue(ref powerUp1State);
         //serializer.SerializeValue(ref powerUp2State);
@@ -184,9 +185,10 @@ public class PlayerNet : NetworkBehaviour, IDamageable
 
     [HideInInspector]
     public PowerUp[] equipedPowerUpMap = new PowerUp[8];
+    ////[HideInInspector]
+    ////public Dictionary<PowerUp,int> equipedPowerUpSlotMap = new Dictionary<PowerUp, int>(8);
     [HideInInspector]
     public GameObject[] powerUpsGB;
-    [SerializeField]
     private PowerUpInterface[] powerUps;
 
 
@@ -225,6 +227,7 @@ public class PlayerNet : NetworkBehaviour, IDamageable
     private void Start()
     {
 
+
         //Debug.Log($"Spawned | IsOwner={IsOwner} | OwnerClientId={OwnerClientId} | LocalClientId={NetworkManager.Singleton.LocalClientId}");
 
         GameSyncManager.damageableDatabase.Add(PlayerBody.entityHandle, this);
@@ -237,7 +240,8 @@ public class PlayerNet : NetworkBehaviour, IDamageable
         /// TEMP -> SETUP IN MENU
         equipedPowerUpMap[0] = PowerUp.GraplinHook;
         equipedPowerUpMap[1] = PowerUp.Propeller;
-        equipedPowerUpMap[4] = PowerUp.AutoTurret;
+        equipedPowerUpMap[4] = PowerUp.Rifle;
+        equipedPowerUpMap[5] = PowerUp.AutoTurret;
 
         powerUps = new PowerUpInterface[8];
         powerUpsGB = new GameObject[8];
@@ -284,17 +288,30 @@ public class PlayerNet : NetworkBehaviour, IDamageable
                     AutoTurretPrefab = null;
 
                     break;
+                case PowerUp.Rifle:
+
+                    GameObject RiflePrefab = Resources.Load<GameObject>("Prefabs/PowerUps/Rifle");
+                    GameObject RifleInstance = Instantiate(RiflePrefab, PlayerBody.transform);
+
+                    RifleInstance.GetComponent<Rifle>().playerBodyHandle = PlayerBody.entityHandle;
+                    RifleInstance.GetComponent<Rifle>().team = team;
+
+                    powerUpsGB[i] = RifleInstance;
+                    if (powerUpsGB[i].GetComponent<PowerUpInterface>() == null) Debug.Log("eeeeeeee");
+                    powerUps[i] = powerUpsGB[i].GetComponent<PowerUpInterface>();
+                    RiflePrefab = null;
+
+                    break;
             }
         }
         Resources.UnloadUnusedAssets();
         var servernet = FindFirstObjectByType<ServerManagerNet>(FindObjectsInactive.Include).GetComponent<ServerManagerNet>();
 
-
         GameSyncManager.Players.Add(this);
 
-        if(NetworkManager.Singleton.ConnectedClientsIds.Count == GameSyncManager.Players.Count)
-            servernet.PromoteTickAsSynced();
-     
+        //if(NetworkManager.Singleton.ConnectedClientsIds.Count == GameSyncManager.Players.Count)
+        servernet.PromoteTickAsSynced();
+
         if (IsServer)
         {
             Destroy(player);
@@ -310,39 +327,19 @@ public class PlayerNet : NetworkBehaviour, IDamageable
             Destroy(player);
             clientPlayer.enabled = true;
         }
-
-        //if (!servernet.syncedThisFrame)
-        //{ 
-        //    servernet.PromoteTickAsSynced();
-        //} 
-
-        ////RapierWorld.world_store_snapshot(RapierWorld.world);
-        ////RapierToUnityDatabase.ROLLBACKsave();
-        ///
-
     }
 
     public override void OnNetworkSpawn()
     {
+
         player = GetComponent<Player>();
         clientPlayer = GetComponent<ClientPlayer>();
-
-
 
         inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
         inputPayloadRBufferTransmitor = new RingBuffer<InputPayload>(PlayerNet.PayloadTransmiotorRBufferSize);
 
+        GameSyncManager.GameSyncSave();
 
-        ///graplingHook = powerUps[(int)PowerUp.GraplinHook-1].ga.GetComponent<Grapling>();
-
-        //var ui = FindFirstObjectByType<UI>(FindObjectsInactive.Include);
-
-        //PushM = new JointMotor2D { motorSpeed = 100, maxMotorTorque = Pistonjoint.motor.maxMotorTorque };
-        //PullM = Pistonjoint.motor;
-        //Physics2D.IgnoreCollision(PlayerBody.GetComponent<Collider2D>(), Pistonjoint.GetComponent<Collider2D>(), true);
-
-        //graplingHookActive.OnValueChanged += (_, v) => UpdatePowerupClientRpc(PowerUps.GraplinHook, v);
-        //propellerActive.OnValueChanged += (_, v) => UpdatePowerupClientRpc(PowerUps.Propeller, v);
     }
 
     public void UpdateSyncedStates()
@@ -369,7 +366,7 @@ public class PlayerNet : NetworkBehaviour, IDamageable
         mechanicalState.pistonAngle = mechState.pistonAngle;
         mechanicalState.pistonPushOrPull = mechState.pistonPushOrPull;
         mechanicalState.pistonPushArmed = mechState.pistonPushArmed;
-        mechanicalState.selectedPowerUp = mechState.selectedPowerUp;
+        mechanicalState.selectedPowerUpIdx = mechState.selectedPowerUpIdx;
         mechanicalState.energy = mechState.energy;
         mechanicalState.PowerUpsStates = mechState.PowerUpsStates;
 
@@ -396,7 +393,7 @@ public class PlayerNet : NetworkBehaviour, IDamageable
 
     private void ProcessAction(Action action, Vector2 delta)
     {
-        int activePowerUp = (int)mechanicalState.selectedPowerUp - 1;
+        //int activePowerUpZeroedIdx = (int)mechanicalState.selectedPowerUpZeroedIdx;
         switch (action)
         {
             case Action.None:
@@ -412,16 +409,18 @@ public class PlayerNet : NetworkBehaviour, IDamageable
                 break;
             case Action.ChangeSelectedPowerUp:
 
-                PowerUp newPowerUp = (PowerUp)delta.x;
-                if (mechanicalState.selectedPowerUp != 0)
+                //PowerUp newPowerUp = (PowerUp)delta.x;
+                //var activePowerUpSlot = equipedPowerUpSlotMap[activePowerUp];
+                //var newPowerUpSlot = equipedPowerUpSlotMap[newPowerUp];
+                if (mechanicalState.selectedPowerUpIdx >= 0)
                 {
-                    powerUps[activePowerUp].PowerUpSelection(false);
+                    powerUps[mechanicalState.selectedPowerUpIdx].PowerUpSelection(false);
                 }
-                if (newPowerUp != 0)
+                if (delta.x >= 0)
                 {
-                    powerUps[(int)newPowerUp - 1].PowerUpSelection(true);
+                    powerUps[(int)delta.x].PowerUpSelection(true);
                 }
-                mechanicalState.selectedPowerUp = newPowerUp;
+                mechanicalState.selectedPowerUpIdx = (int)delta.x;
 
                 break;
             case Action.ChangePassivePowerUp:
@@ -432,22 +431,25 @@ public class PlayerNet : NetworkBehaviour, IDamageable
                 break;
             case Action.CancelPowerUp:
 
-                powerUps[(int)delta.x - 1].PowerUpAction2(Vector2.zero);
-                mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates & ~(1 << (byte)delta.x - 1));
+                powerUps[(int)delta.x].PowerUpAction2(Vector2.zero);
+                mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates & ~(1 << (byte)delta.x));
 
                 break;
             case Action.Aim:
-                if(mechanicalState.selectedPowerUp>0)
-                    powerUps[activePowerUp].PowerUpAim(delta);
+                /// OPTI: useless condition ?
+                if(mechanicalState.selectedPowerUpIdx >= 0)
+                {
+                    powerUps[mechanicalState.selectedPowerUpIdx].PowerUpAim(delta);
+                }
                 break;
             case Action.PowerUpAction1:
-                powerUps[activePowerUp].PowerUpAction1(delta);
-                mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates | (1 << (byte)activePowerUp));
+                powerUps[mechanicalState.selectedPowerUpIdx].PowerUpAction1(delta);
+                mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates | (1 << (byte)equipedPowerUpMap[mechanicalState.selectedPowerUpIdx]));
                 break;
 
             case Action.PowerUpAction2:
-                powerUps[activePowerUp].PowerUpAction2(delta);
-                mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates & ~(1 << (byte)activePowerUp));
+                powerUps[mechanicalState.selectedPowerUpIdx].PowerUpAction2(delta);
+                mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates & ~(1 << (byte)equipedPowerUpMap[mechanicalState.selectedPowerUpIdx]));
                 break;
             case Action.PowerUpPassif:
                 powerUps[(int)delta.x].PowerUpAction1(Vector2.zero);
@@ -476,6 +478,11 @@ public class PlayerNet : NetworkBehaviour, IDamageable
 
         //mechanicalState.energy = Mathf.Min(mechanicalState.energy + 0.25f,100);
         mechanicalState.energy = Mathf.Max(mechanicalState.energy - 0.1f, 0);
+        for (int i = 0; i < 8; i++)
+        {
+            if (powerUps[i] == null) continue;
+            powerUps[i].Tick();
+        }
 
         ProcessAction(payload.action1, payload.action1Delta);
         ProcessAction(payload.action2, payload.action2Delta);

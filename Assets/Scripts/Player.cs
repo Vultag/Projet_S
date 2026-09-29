@@ -123,7 +123,6 @@ public class Player : MonoBehaviour
 
         playerNet.ProcessInputPayload(activeInputPayload);
 
-
         serverManagerNet.Reconciliation();
 
 

@@ -60,6 +60,8 @@ public class RapierBody : MonoBehaviour
             trig_listener = trig_listeners
         });
 
+        //Debug.Log(entityHandle + " " + gameObject.name);
+
         transform.SetParent(null);
 
         ///RapierWorld.body_set_enabled(RapierWorld.world,entityHandle,isActiveAndEnabled);

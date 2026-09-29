@@ -88,4 +88,8 @@ public class Grapling : MonoBehaviour, PowerUpInterface
         Detatch();
     }
 
+    public void Tick()
+    {
+
+    }
 }

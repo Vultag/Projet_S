@@ -11,7 +11,7 @@ public class AutoTurret : MonoBehaviour,PowerUpInterface
     //[HideInInspector]
     //public BulletPool bulletPool;
 
-    float latestEnemyAngle;
+    Vector2 latestEnemyDirection;
     const float shootCooldownTime = 0.5f;
     float shootCooldown = shootCooldownTime;
     float rollbackShootCooldown = shootCooldownTime;
@@ -19,7 +19,6 @@ public class AutoTurret : MonoBehaviour,PowerUpInterface
 
     public void PowerUpAction1(Vector2 delta)
     {
-        shootCooldown -= PlayerNet.gameFixedDeltaTime;
 
         var closestPlayerhandle = RapierWorld.world_get_closest_body(RapierWorld.world,
                   playerBodyHandle,
@@ -38,8 +37,8 @@ public class AutoTurret : MonoBehaviour,PowerUpInterface
 
             var closestPlayerState = RapierWorld.body_get_state(RapierWorld.world, closestPlayerhandle);
             var playerBodyState = RapierWorld.body_get_state(RapierWorld.world, playerBodyHandle);
-            Vector2 direction = new Vector2(closestPlayerState.x - playerBodyState.x, closestPlayerState.y - playerBodyState.y);
-            latestEnemyAngle = -Mathf.Atan2(direction.x, direction.y);
+
+            latestEnemyDirection = new Vector2(closestPlayerState.x - playerBodyState.x, closestPlayerState.y - playerBodyState.y);
 
             if (shootCooldown <= 0)
             {
@@ -48,7 +47,7 @@ public class AutoTurret : MonoBehaviour,PowerUpInterface
                 //RapierWorld.unityToRapierEntityMap.TryGetValue(closestPlayerhandle, out var entityB);
                 Bullet bullet = GameSyncManager.bulletPool.Pull();
                 if (bullet == null) return;
-                bullet.Shoot(playerBodyState.x, playerBodyState.y, direction.normalized, 10f,team);
+                bullet.Shoot(playerBodyState.x, playerBodyState.y, latestEnemyDirection.normalized, 10f,team);
                 shootCooldown = shootCooldownTime;
             }
 
@@ -95,9 +94,14 @@ public class AutoTurret : MonoBehaviour,PowerUpInterface
 
     private void FixedUpdate()
     {
+        float side = Mathf.Sign(latestEnemyDirection.x);
+        var latestEnemyAngle = -Mathf.Atan2(latestEnemyDirection.x * side, latestEnemyDirection.y * side);
+        this.transform.localScale = new Vector3(this.transform.localScale.x, Mathf.Abs(this.transform.localScale.y) * side, this.transform.localScale.z);
         this.transform.rotation = quaternion.RotateZ(latestEnemyAngle);
+    }
 
-        //RapierWorld.unityToRapierEntityMap.TryGetValue(test, out var testAAA);
-
+    public void Tick()
+    {
+        shootCooldown -= PlayerNet.gameFixedDeltaTime;
     }
 }

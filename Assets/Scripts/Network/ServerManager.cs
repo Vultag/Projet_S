@@ -39,9 +39,6 @@ public class ServerManager : MonoBehaviour
     private GameManager gameManager;
     private ServerDataDispatcher dataDispatcher;
 
-    private uint temp;
-    private uint tempAA;
-
     private void Awake()
     {
         serverManagerNet = this.GetComponent<ServerManagerNet>();
@@ -136,26 +133,15 @@ public class ServerManager : MonoBehaviour
 
     }
 
-    public void playerJoin(PlayerNet newPlayerNet)
+    public void playerJoin(ulong newClientId)
     {
-        /// Join rpc to new client for every other connected player
-        var newClientTarget = new ClientRpcParams{ Send = new ClientRpcSendParams { TargetClientIds = new[] { newPlayerNet.OwnerClientId } } };
-        for (int i = 0; i < targetClientIds.Count; i++)
-        {
-            serverManagerNet.playerJoinClientRpc(
-                serverManagerNet.playersInitialisationData[i],
-                statePayloads[i],
-                targetClientIds[i],
-                newClientTarget
-                );
-        }
-        targetClientIds.Add(newPlayerNet.OwnerClientId);
-        var newPlyerIdx = targetClientIds.Count-1;
+        NetworkObject playerObj = NetworkManager.Singleton.ConnectedClients[newClientId].PlayerObject;
+        //GameObject player = Instantiate(serverManagerNet.PlayerPrefab);
 
-        newPlayerNet.inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
-        newPlayerNet.inputPayloadRBuffer.SlideHead(-1);
-        newPlayerNet.inputPayloadRBuffer.Write(new InputPayload { tick = ServerManagerNet.tick});
-        newPlayerNet.latestInputsRecivedTick = ServerManagerNet.tick;
+        //NetworkObject networkObject = player.GetComponent<NetworkObject>();
+        //networkObject.SpawnAsPlayerObject(newClientId);
+        var newPlayerNet = playerObj.GetComponent<PlayerNet>();
+
 
         switch (GameSyncManager.Players.Count)
         {
@@ -200,6 +186,26 @@ public class ServerManager : MonoBehaviour
                 break;
 
         }
+
+        /// Join rpc to new client for every other connected player
+        var newClientTarget = new ClientRpcParams{ Send = new ClientRpcSendParams { TargetClientIds = new[] { newClientId } } };
+        for (int i = 0; i < targetClientIds.Count; i++)
+        {
+            serverManagerNet.playerJoinClientRpc(
+                serverManagerNet.playersInitialisationData[i],
+                statePayloads[i],
+                targetClientIds[i],
+                newClientTarget
+                );
+        }
+        targetClientIds.Add(newClientId);
+        var newPlyerIdx = targetClientIds.Count-1;
+
+        newPlayerNet.inputPayloadRBuffer = new RingBuffer<InputPayload>(PlayerNet.PayloadRBufferSize);
+        newPlayerNet.inputPayloadRBuffer.SlideHead(-1);
+        newPlayerNet.inputPayloadRBuffer.Write(new InputPayload { tick = ServerManagerNet.tick});
+        newPlayerNet.latestInputsRecivedTick = ServerManagerNet.tick;
+
 
         RapierWorld.collider_set_memberships(
           RapierWorld.world,

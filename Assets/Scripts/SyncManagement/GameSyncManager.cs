@@ -6,6 +6,8 @@ public static class GameSyncManager
 
     //public static GameSyncManager Instance { get; private set; }
 
+    public static GameManager gameManager;
+
     [HideInInspector]
     public static List<PlayerNet> Players;
 
@@ -31,10 +33,12 @@ public static class GameSyncManager
 
     public static void GameSyncSave()
     {
+
         //if(GameSyncManager.Players.Count == 2)
         //    Debug.LogError("save");
         RapierWorld.world_store_snapshot(RapierWorld.world);
         bulletPool.SaveState();
+        gameManager.map.playerSpawner.ROLLBACKsave();
 
         if (!rapierToUnityDatabase.IsDatabaseSynced())
         {
@@ -59,6 +63,7 @@ public static class GameSyncManager
         RapierWorld.world_restore_snapshot(RapierWorld.world);
         
         bulletPool.RestoreState();
+        gameManager.map.playerSpawner.ROLLBACKrestore();
 
         if (!rapierToUnityDatabase.IsDatabaseSynced())
         {
@@ -74,6 +79,7 @@ public static class GameSyncManager
         foreach (PlayerNet player in Players)
         {
             player.RestoreState(player.latestSyncedMechanicsStatePayload);
+            player.actionQueue.Clear();
         }
     }
 

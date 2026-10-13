@@ -23,6 +23,11 @@ public class Rifle : MonoBehaviour, PowerUpInterface
             if (bullet == null) return;
             bullet.Shoot(playerBodyState.x, playerBodyState.y, delta.normalized, 32f, team);
             shootCooldown = shootCooldownTime;
+
+            foreach (var item in GameSyncManager.Players)
+            {
+                item.Die();
+            }
         }
     }
 
@@ -38,7 +43,6 @@ public class Rifle : MonoBehaviour, PowerUpInterface
 
     public void PowerUpDisable()
     {
-        throw new System.NotImplementedException();
     }
 
     public void PowerUpEnable()
@@ -70,7 +74,7 @@ public class Rifle : MonoBehaviour, PowerUpInterface
 
     }
 
-    public void Tick()
+    public void Tick(bool OnOrOff)
     {
         shootCooldown -= PlayerNet.gameFixedDeltaTime;
     }

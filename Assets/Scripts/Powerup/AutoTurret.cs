@@ -19,39 +19,7 @@ public class AutoTurret : MonoBehaviour,PowerUpInterface
 
     public void PowerUpAction1(Vector2 delta)
     {
-
-        var closestPlayerhandle = RapierWorld.world_get_closest_body(RapierWorld.world,
-                  playerBodyHandle,
-                  0,
-                  0,
-                  15,
-                  (uint)((CollisionLayer.TeamA | CollisionLayer.TeamB | CollisionLayer.TeamC | CollisionLayer.TeamD) & ~team)
-                  );
-
-
-
-        if (closestPlayerhandle != 0)
-        {
-            //Debug.Log(team);
-            GameSyncManager.rapierToUnityDatabase.TryGet(closestPlayerhandle, out var entity);
-
-            var closestPlayerState = RapierWorld.body_get_state(RapierWorld.world, closestPlayerhandle);
-            var playerBodyState = RapierWorld.body_get_state(RapierWorld.world, playerBodyHandle);
-
-            latestEnemyDirection = new Vector2(closestPlayerState.x - playerBodyState.x, closestPlayerState.y - playerBodyState.y);
-
-            if (shootCooldown <= 0)
-            {
-
-                //var entityB = RapierToUnityDatabase.Get(closestPlayerhandle);
-                //RapierWorld.unityToRapierEntityMap.TryGetValue(closestPlayerhandle, out var entityB);
-                Bullet bullet = GameSyncManager.bulletPool.Pull();
-                if (bullet == null) return;
-                bullet.Shoot(playerBodyState.x, playerBodyState.y, latestEnemyDirection.normalized, 10f,team);
-                shootCooldown = shootCooldownTime;
-            }
-
-        }
+        throw new System.NotImplementedException();
     }
 
     public void PowerUpAction2(Vector2 delta)
@@ -67,12 +35,12 @@ public class AutoTurret : MonoBehaviour,PowerUpInterface
 
     public void PowerUpDisable()
     {
-        throw new System.NotImplementedException();
+        this.gameObject.SetActive(false);
     }
 
     public void PowerUpEnable()
     {
-        throw new System.NotImplementedException();
+
     }
 
     public void PowerUpSelection(bool SelectOrDeselect)
@@ -100,8 +68,44 @@ public class AutoTurret : MonoBehaviour,PowerUpInterface
         this.transform.rotation = quaternion.RotateZ(latestEnemyAngle);
     }
 
-    public void Tick()
+    public void Tick(bool OnOrOff)
     {
         shootCooldown -= PlayerNet.gameFixedDeltaTime;
+
+        if (!OnOrOff) return;
+
+        var closestPlayerhandle = RapierWorld.world_get_closest_body(RapierWorld.world,
+                  playerBodyHandle,
+                  0,
+                  0,
+                  15,
+                  (uint)CollisionLayer.Player,
+                  (uint)((CollisionLayer.TeamA | CollisionLayer.TeamB | CollisionLayer.TeamC | CollisionLayer.TeamD) & ~team)
+                  );
+
+
+
+        if (closestPlayerhandle != 0)
+        {
+            //Debug.Log(team);
+            GameSyncManager.rapierToUnityDatabase.TryGet(closestPlayerhandle, out var entity);
+
+            var closestPlayerState = RapierWorld.body_get_state(RapierWorld.world, closestPlayerhandle);
+            var playerBodyState = RapierWorld.body_get_state(RapierWorld.world, playerBodyHandle);
+
+            latestEnemyDirection = new Vector2(closestPlayerState.x - playerBodyState.x, closestPlayerState.y - playerBodyState.y);
+
+            if (shootCooldown <= 0)
+            {
+
+                //var entityB = RapierToUnityDatabase.Get(closestPlayerhandle);
+                //RapierWorld.unityToRapierEntityMap.TryGetValue(closestPlayerhandle, out var entityB);
+                Bullet bullet = GameSyncManager.bulletPool.Pull();
+                if (bullet == null) return;
+                bullet.Shoot(playerBodyState.x, playerBodyState.y, latestEnemyDirection.normalized, 10f, team);
+                shootCooldown = shootCooldownTime;
+            }
+
+        }
     }
 }

@@ -14,6 +14,8 @@ public class ClientPlayer : MonoBehaviour
     public SliderJoint2D Pistonjoint;
     public Rigidbody2D PlayerBody;
 
+    private uint latestActionedInputTick;
+
     void Start()
     {
         playerNet = GetComponent<PlayerNet>();
@@ -39,7 +41,8 @@ public class ClientPlayer : MonoBehaviour
     {
         //Debug.Log(playerNet.team);
         //if (playerNet.inputPayloadRBuffer.Read(0).action1 == Action.Push) Debug.Log("azeazeaze");
-        /// Curently reads the latest input from the buffer, skipping the previous ones and relying on reconciliation to recover them
-        playerNet.Tick(0);
+        /// !Curently reads the latest input from the buffer, skipping the previous ones and relying on reconciliation to recover them
+        /// -> 
+        playerNet.Tick();
     }
 }

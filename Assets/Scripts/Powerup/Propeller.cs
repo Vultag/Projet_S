@@ -72,7 +72,7 @@ public class Propeller : MonoBehaviour, PowerUpInterface
         flames.SetActive(false);
     }
 
-    public void Tick()
+    public void Tick(bool OnOrOff)
     {
 
     }

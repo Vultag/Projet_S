@@ -62,7 +62,6 @@ public class Player : MonoBehaviour
     private GameObject hookGB;
 
 
-    private GameManager gameManager;
 
     //public void syncTick(uint atTick)
     //{
@@ -94,8 +93,6 @@ public class Player : MonoBehaviour
         //var hookUiLink =hookGB.AddComponent<HookUiLink>();
         //hookUiLink.UiButton = ui.hookDisableButton;
 
-        gameManager = FindFirstObjectByType<GameManager>(FindObjectsInactive.Include);
-
         Camera.main.GetComponent<TrackPlayer>().PlayerGB = playerNet.PlayerBody.gameObject;
         Camera.main.GetComponent<TrackPlayer>().enabled = true;
 
@@ -109,6 +106,7 @@ public class Player : MonoBehaviour
         ///activeInputPayload = InputPayload.Default(0);
 
         // RapierWorld.PhysicsStep(1/60f);
+
 
     }
 
@@ -125,15 +123,16 @@ public class Player : MonoBehaviour
 
         serverManagerNet.Reconciliation();
 
+        playerNet.actionQueue.Enqueue(activeInputPayload);
 
         if (actionNumThisFrame > 2)
         {
             Debug.LogWarning("more tow action this frame");
         }
 
-        gameManager.Tick(ServerManagerNet.tick);
+        GameSyncManager.gameManager.Tick();
 
-        playerNet.Tick(0);
+        playerNet.Tick();
 
         RapierWorld.PhysicsStep(PlayerNet.gameFixedDeltaTime);
 

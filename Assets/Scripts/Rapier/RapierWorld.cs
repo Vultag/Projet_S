@@ -399,7 +399,8 @@ internal static class RapierWorld
         float x,
         float y,
         float radius,
-        uint layer
+        uint memberships,
+        uint filter
     );
     [DllImport("rapier_unity")]
     public static extern void collider_set_memberships(

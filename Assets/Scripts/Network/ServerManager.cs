@@ -5,6 +5,7 @@ using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Windows;
 
 public class PlayerRigidbodyStates
 {
@@ -36,7 +37,6 @@ public class ServerManager : MonoBehaviour
 
     private uint maximumTickGap = 60;
 
-    private GameManager gameManager;
     private ServerDataDispatcher dataDispatcher;
 
     private void Awake()
@@ -47,7 +47,6 @@ public class ServerManager : MonoBehaviour
         player3RigidbodyStates = new();
         player4RigidbodyStates = new();
         dataDispatcher = this.AddComponent<ServerDataDispatcher>();
-        gameManager = FindFirstObjectByType<GameManager>(FindObjectsInactive.Include);
         for (int i = 0; i < statePayloads.Length; i++)
         {
             statePayloads[i] = new StatePayload
@@ -114,14 +113,15 @@ public class ServerManager : MonoBehaviour
         while (ServerManagerNet.tick < oldestCommonPayloadTick)
         {
             ServerManagerNet.tick++;
-            gameManager.Tick(ServerManagerNet.tick);
+            GameSyncManager.gameManager.Tick();
 
             foreach (PlayerNet playerNet in GameSyncManager.Players)
             {
 
                 short leadingPayloadTickDiff = (short)(oldestCommonPayloadTick - playerNet.inputPayloadRBuffer.Read(0).tick);
                 relativeTick = (short)((ServerManagerNet.tick - oldestCommonPayloadTick)+ leadingPayloadTickDiff);
-                playerNet.Tick(relativeTick);
+                playerNet.actionQueue.Enqueue(playerNet.inputPayloadRBuffer.Read(relativeTick));
+                playerNet.Tick();
 
                 //if (playerNet.inputPayloadRBuffer.Read(relativeTick).pistonPush) Debug.Log("arm at " + (ServerManagerNet.tick));
             }
@@ -135,57 +135,59 @@ public class ServerManager : MonoBehaviour
 
     public void playerJoin(ulong newClientId)
     {
-        NetworkObject playerObj = NetworkManager.Singleton.ConnectedClients[newClientId].PlayerObject;
-        //GameObject player = Instantiate(serverManagerNet.PlayerPrefab);
+        //NetworkObject playerObj = NetworkManager.Singleton.ConnectedClients[newClientId].PlayerObject;
 
-        //NetworkObject networkObject = player.GetComponent<NetworkObject>();
-        //networkObject.SpawnAsPlayerObject(newClientId);
-        var newPlayerNet = playerObj.GetComponent<PlayerNet>();
-
+        Color newPlayerColor = Color.white;
+        CollisionLayer newPlayerTeam = CollisionLayer.Player;
+        Vector3 newPlayerSpawnPos = Vector3.zero;
+        Vector2 startForceDir = Vector2.zero;
 
         switch (GameSyncManager.Players.Count)
         {
             case 0:
-                serverManagerNet.playersInitialisationData.Add(new PlayerInitialisationData
-                {
-                    playerColor = Color.red,
-                    playerTeam = CollisionLayer.TeamA
-                });
-                newPlayerNet.playerIcon.color = Color.red;
-                newPlayerNet.team = CollisionLayer.TeamA;
+                newPlayerColor = Color.red;
+                newPlayerTeam = CollisionLayer.TeamA;
+                newPlayerSpawnPos = serverManagerNet.map.TeamAspawner.transform.position;
+                startForceDir = serverManagerNet.map.TeamAspawner.transform.rotation * Vector2.up;
                 break;
             case 1:
-                serverManagerNet.playersInitialisationData.Add(new PlayerInitialisationData
-                {
-                    playerColor = Color.blue,
-                    playerTeam = CollisionLayer.TeamB
-                });
-                newPlayerNet.playerIcon.color = Color.blue;
-                newPlayerNet.team = CollisionLayer.TeamB;
+                newPlayerColor = Color.blue;
+                newPlayerTeam = CollisionLayer.TeamB;
+                newPlayerSpawnPos = serverManagerNet.map.TeamBspawner.transform.position;
+                startForceDir = serverManagerNet.map.TeamBspawner.transform.rotation * Vector2.up;
                 break;
             case 2:
-                serverManagerNet.playersInitialisationData.Add(new PlayerInitialisationData
-                {
-                    playerColor = Color.green,
-                    playerTeam = CollisionLayer.TeamC
-                });
-                newPlayerNet.playerIcon.color = Color.green;
-                newPlayerNet.team = CollisionLayer.TeamC;
+                newPlayerColor = Color.green;
+                newPlayerTeam = CollisionLayer.TeamC;
                 break;
             case 3:
-                serverManagerNet.playersInitialisationData.Add(new PlayerInitialisationData
-                {
-                    playerColor = Color.grey,
-                    playerTeam = CollisionLayer.TeamD
-                });
-                newPlayerNet.playerIcon.color = Color.grey;
-                newPlayerNet.team = CollisionLayer.TeamD;
+                newPlayerColor = Color.grey;
+                newPlayerTeam = CollisionLayer.TeamD;
                 break;
             default:
                 Debug.LogError("4+ players not implemented");
                 break;
 
         }
+
+        GameObject newPlayer = Instantiate(
+            serverManagerNet.playerPrefab,
+            newPlayerSpawnPos,
+            Quaternion.identity
+        );
+        var newPlayerNet = newPlayer.GetComponent<PlayerNet>();
+
+        newPlayer.GetComponent<NetworkObject>()
+              .SpawnAsPlayerObject(newClientId);
+
+        newPlayerNet.playerIcon.color = newPlayerColor;
+        newPlayerNet.team = newPlayerTeam;
+
+        serverManagerNet.playersInitialisationData.Add(new PlayerInitialisationData
+        {
+            playerColor = newPlayerNet.playerIcon.color,
+            playerTeam = newPlayerNet.team
+        });
 
         /// Join rpc to new client for every other connected player
         var newClientTarget = new ClientRpcParams{ Send = new ClientRpcSendParams { TargetClientIds = new[] { newClientId } } };
@@ -212,6 +214,8 @@ public class ServerManager : MonoBehaviour
           newPlayerNet.PlayerBody.gameObject.GetComponent<RapierCircleShape>().colliderHandle,
           (uint)(CollisionLayer.Player | newPlayerNet.team)
           );
+
+        RapierWorld.AddForce(newPlayerNet.PlayerBody.entityHandle, startForceDir * 100, 0);
 
         newPlayerNet.enabled = true;
 

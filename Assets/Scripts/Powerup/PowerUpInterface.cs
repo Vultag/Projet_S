@@ -18,7 +18,7 @@ public interface PowerUpInterface
     void PowerUpAction1(Vector2 delta);
     void PowerUpAction2(Vector2 delta);
 
-    void Tick();
+    void Tick(bool OnOrOff);
 
 
 

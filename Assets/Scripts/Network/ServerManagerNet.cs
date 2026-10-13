@@ -33,6 +33,10 @@ public struct PlayerInitialisationData : INetworkSerializable
 
 public class ServerManagerNet : NetworkBehaviour
 {
+
+    public GameObject playerPrefab;
+    public Map map;
+
     static public uint tick;
 
     ////[HideInInspector]
@@ -45,12 +49,8 @@ public class ServerManagerNet : NetworkBehaviour
 
     private bool pendingServerData;
 
-    private GameManager gameManager;
-
     private void Awake()
     {
-        gameManager = FindFirstObjectByType<GameManager>(FindObjectsInactive.Include);
-        gameManager.gameObject.SetActive(true);
         GameSyncManager.bulletPool = FindAnyObjectByType<BulletPool>(FindObjectsInactive.Include);
     }
 
@@ -181,6 +181,25 @@ public class ServerManagerNet : NetworkBehaviour
            (uint)(CollisionLayer.Player | playerInitialisationData.playerTeam)
            );
 
+        Vector2 startForceDir = Vector2.zero;
+        switch (playerInitialisationData.playerTeam)
+        {
+            case CollisionLayer.TeamA:
+                startForceDir = map.TeamAspawner.transform.rotation * Vector2.up;
+                break;
+            case CollisionLayer.TeamB:
+                startForceDir = map.TeamBspawner.transform.rotation * Vector2.up;
+                break;
+            case CollisionLayer.TeamC:
+                break;
+            case CollisionLayer.TeamD:
+                break;
+            default:
+                break;
+        }
+
+        RapierWorld.AddForce(newPlayer.PlayerBody.entityHandle, startForceDir * 100, 0);
+
         /// Sync stick
         ServerManagerNet.tick = statePayload.tick;
 
@@ -194,7 +213,6 @@ public class ServerManagerNet : NetworkBehaviour
         //}
 
     }
-
 
 
     /// OPTI
@@ -368,17 +386,19 @@ public class ServerManagerNet : NetworkBehaviour
         /// WORLD STATE AT LAST SYNC
         {
             GameSyncManager.GameSyncRestore();
-
         }
         /// syncing
         {
             short RollbackTicksTillSync = (short)(syncedTick - latestServerStatePayloadTick);
             while (syncedTick <= latestServerStatePayloadTick)
             {
-                foreach (PlayerNet player in GameSyncManager.Players)
+                GameSyncManager.gameManager.Tick();
+                foreach (PlayerNet playerNet in GameSyncManager.Players)
                 {
-                    short relativeRollbackTicksTillSync = (short)(RollbackTicksTillSync - (player.latestInputsRecivedTick - latestServerStatePayloadTick));
-                    player.Tick(relativeRollbackTicksTillSync);
+                    short relativeRollbackTicksTillSync = (short)(RollbackTicksTillSync - (playerNet.latestInputsRecivedTick - latestServerStatePayloadTick));
+                    if (playerNet.actionQueue.Count > 0) Debug.LogError("ppppppppppp");
+                    playerNet.actionQueue.Enqueue(playerNet.inputPayloadRBuffer.Read(relativeRollbackTicksTillSync));
+                    playerNet.Tick();
                     ///Debug.Log(player.inputPayloadRBuffer.Read(relativeRollbackTicksTillSync).direction);
                 }
                 RapierWorld.PhysicsStep(PlayerNet.gameFixedDeltaTime);
@@ -393,7 +413,7 @@ public class ServerManagerNet : NetworkBehaviour
             /// Debuging restore and condition, its supposed to be the same
             player.RestoreState(player.latestServerStatePayload);
 
-            if (player.latestServerStatePayload.playerMechanicsState.ticksTillPistonPushActivation != player.mechanicalState.ticksTillPistonPushActivation) Debug.LogError("ccccccccc");
+            if (player.latestServerStatePayload.playerMechanicsState.ticksTillPistonPushActivation != player.mechanicalState.ticksTillPistonPushActivation) Debug.LogError("ccccccccc " + player.latestServerStatePayload.playerMechanicsState.ticksTillPistonPushActivation + "   " + player.mechanicalState.ticksTillPistonPushActivation);
             ////player.UpdateSyncedStates();
         }
 
@@ -406,10 +426,13 @@ public class ServerManagerNet : NetworkBehaviour
         /// projection
         while (rollbackTicksForProjection < 0)
         {
-            foreach (PlayerNet player in GameSyncManager.Players)
+            GameSyncManager.gameManager.Tick();
+            foreach (PlayerNet playerNet in GameSyncManager.Players)
             {
-                short relativeRollbackTicksForProjection = (short)Mathf.Min((rollbackTicksForProjection + (tick - player.latestInputsRecivedTick)),0);
-                player.Tick(relativeRollbackTicksForProjection);
+                short relativeRollbackTicksForProjection = (short)Mathf.Min((rollbackTicksForProjection + (tick - playerNet.latestInputsRecivedTick)),0);
+                if (playerNet.actionQueue.Count > 0) Debug.LogError("nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn");
+                playerNet.actionQueue.Enqueue(playerNet.inputPayloadRBuffer.Read(relativeRollbackTicksForProjection));
+                playerNet.Tick();
             }
             RapierWorld.PhysicsStep(PlayerNet.gameFixedDeltaTime);
             rollbackTicksForProjection++;

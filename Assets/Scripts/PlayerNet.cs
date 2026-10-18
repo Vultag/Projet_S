@@ -197,6 +197,9 @@ public class PlayerNet : NetworkBehaviour, IDamageable
     [HideInInspector]
     public GameObject[] powerUpsGB;
     private PowerUpInterface[] powerUps;
+    [HideInInspector]
+    public int[] weaponsAmmo = new int[8];
+    private int[] weaponsAmmoROLLBACK = new int[8];
 
 
     public const float gameFixedDeltaTime = 1f / 60f;
@@ -280,7 +283,7 @@ public class PlayerNet : NetworkBehaviour, IDamageable
                     GameObject PropellerPrefab = Resources.Load<GameObject>("Prefabs/PowerUps/Propeller");
                     GameObject PropellerInstance = Instantiate(PropellerPrefab, PlayerBody.transform);
 
-                    PropellerInstance.GetComponent<Propeller>().playerBody = PlayerBody;
+                    PropellerInstance.GetComponent<Propeller>().player = this;
 
                     powerUpsGB[i] = PropellerInstance;
                     powerUps[i] = powerUpsGB[i].GetComponent<PowerUpInterface>();
@@ -291,11 +294,17 @@ public class PlayerNet : NetworkBehaviour, IDamageable
 
                     GameObject AutoTurretPrefab = Resources.Load<GameObject>("Prefabs/PowerUps/AutoTurret");
                     GameObject AutoTurretInstance = Instantiate(AutoTurretPrefab, PlayerBody.transform);
-                    AutoTurretInstance.GetComponent<AutoTurret>().playerBodyHandle = PlayerBody.entityHandle;
-                    AutoTurretInstance.GetComponent<AutoTurret>().team = team;
+
+                    AutoTurret autoTurret = AutoTurretInstance.GetComponent<AutoTurret>();
+                    autoTurret.player = this;
+                    autoTurret.equipmentIdx = i;
+                    autoTurret.team = team;
 
                     powerUpsGB[i] = AutoTurretInstance;
                     powerUps[i] = powerUpsGB[i].GetComponent<PowerUpInterface>();
+                    weaponsAmmo[i] = 10;
+                    syncedUIstatesBitmask |= 1u << (i+16);
+                    
                     AutoTurretPrefab = null;
 
                     break;
@@ -304,12 +313,17 @@ public class PlayerNet : NetworkBehaviour, IDamageable
                     GameObject RiflePrefab = Resources.Load<GameObject>("Prefabs/PowerUps/Rifle");
                     GameObject RifleInstance = Instantiate(RiflePrefab, PlayerBody.transform);
 
-                    RifleInstance.GetComponent<Rifle>().playerBodyHandle = PlayerBody.entityHandle;
-                    RifleInstance.GetComponent<Rifle>().team = team;
+                    Rifle rifle = RifleInstance.GetComponent<Rifle>();
+                    rifle.player = this;
+                    rifle.equipmentIdx = i;
+                    rifle.team = team;
 
                     powerUpsGB[i] = RifleInstance;
                     if (powerUpsGB[i].GetComponent<PowerUpInterface>() == null) Debug.Log("eeeeeeee");
                     powerUps[i] = powerUpsGB[i].GetComponent<PowerUpInterface>();
+                    weaponsAmmo[i] = 6;
+                    syncedUIstatesBitmask |= 1u << (i + 16);
+
                     RiflePrefab = null;
 
                     break;
@@ -367,6 +381,7 @@ public class PlayerNet : NetworkBehaviour, IDamageable
             if (powerUps[i] == null) continue;
             powerUps[i].SavePowerUpState();
         }
+        Array.Copy(weaponsAmmo, weaponsAmmoROLLBACK, 8);
         latestSyncedMechanicsStatePayload = latestServerStatePayload.playerMechanicsState;
     }
     public void RestoreState(MechanicsState mechState)
@@ -396,6 +411,7 @@ public class PlayerNet : NetworkBehaviour, IDamageable
             if (powerUps[i] == null) continue;
             powerUps[i].RestorePowerUpState(((mechState.PowerUpsStates >> i) & 1) == 1);
         }
+        Array.Copy(weaponsAmmoROLLBACK, weaponsAmmo, 8);
 
         if (mechanicalState.ticksTillPistonPushActivation == 0) Debug.Log("qbsdqsbqsdq");
         if (mechanicalState.revertCooldown == 0) Debug.Log("xcwcwx");
@@ -470,7 +486,6 @@ public class PlayerNet : NetworkBehaviour, IDamageable
             case Action.PowerUpAction1:
                 if (mechanicalState.selectedPowerUpIdx < 0) Debug.LogError(mechanicalState.selectedPowerUpIdx);
                 powerUps[mechanicalState.selectedPowerUpIdx].PowerUpAction1(delta);
-                mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates | (1 << mechanicalState.selectedPowerUpIdx));
 
                 break;
 
@@ -508,8 +523,7 @@ public class PlayerNet : NetworkBehaviour, IDamageable
         ///InputPayload payload = inputPayloadRBuffer.Read(relativeTick);
         ///actionQueue.Enqueue(inputPayloadRBuffer.Read(relativeTick));
 
-        //mechanicalState.energy = Mathf.Min(mechanicalState.energy + 0.25f,100);
-        mechanicalState.energy = Mathf.Max(mechanicalState.energy - 0.1f, 0);
+        mechanicalState.energy = Mathf.Min(mechanicalState.energy + 0.08f, 100);
 
         /// OPTI ?
         for (int i = 0; i < 8; i++)
@@ -780,7 +794,26 @@ public class PlayerNet : NetworkBehaviour, IDamageable
             Die();
     }
 
+    public void AmmoPickUp()
+    {
+        for (int i = 0; i < 8; i++)
+        {
+            switch (equipedPowerUpMap[i])
+            {
+                case PowerUp.AutoTurret:
+                    weaponsAmmo[i] += 5;
+                    syncedUIstatesBitmask |= 1u << (i + 16);
+                    break;
+                case PowerUp.Rifle:
+                    weaponsAmmo[i] += 3;
+                    syncedUIstatesBitmask |= 1u << (i + 16);
+                    break;
+                default:
+                    break;
+            }
+        }
 
+    }
 
 
     //public void Bump(Vector2 force)

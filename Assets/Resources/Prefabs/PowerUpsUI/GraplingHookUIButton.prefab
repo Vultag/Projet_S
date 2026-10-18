@@ -87,6 +87,7 @@ GameObject:
   - component: {fileID: 6372861535060476596}
   - component: {fileID: 317080626280681166}
   - component: {fileID: 8718207922144426165}
+  - component: {fileID: 6565992598607328606}
   m_Layer: 5
   m_Name: GraplingHookUIButton
   m_TagString: Untagged
@@ -197,6 +198,20 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &6565992598607328606
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6841877489224729898}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ea90a285b3ef2b4bac925121046a058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UiEquipment
+  powerUpsUIbutton: {fileID: 8718207922144426165}
+  weaponAmmoText: {fileID: 0}
 --- !u!1001 &8316256391276240294
 PrefabInstance:
   m_ObjectHideFlags: 0

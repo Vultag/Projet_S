@@ -78,8 +78,13 @@ public class Grapling : MonoBehaviour, PowerUpInterface
     /// SHOOT
     public void PowerUpAction1(Vector2 delta)
     {
-        hook.gameObject.SetActive(true);
-        hook.Shoot(delta);
+        if(player.mechanicalState.energy >= 15f)
+        {
+            hook.gameObject.SetActive(true);
+            hook.Shoot(delta);
+            player.mechanicalState.energy -= 15f;
+            player.mechanicalState.PowerUpsStates = (byte)(player.mechanicalState.PowerUpsStates | (1 << player.mechanicalState.selectedPowerUpIdx));
+        }
     }
 
     /// DETATCH

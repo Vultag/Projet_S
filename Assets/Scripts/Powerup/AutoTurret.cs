@@ -5,7 +5,9 @@ using static UnityEngine.EventSystems.EventTrigger;
 public class AutoTurret : MonoBehaviour,PowerUpInterface
 {
     [HideInInspector]
-    public ulong playerBodyHandle;
+    public PlayerNet player;
+    [HideInInspector]
+    public int equipmentIdx;
     [HideInInspector]
     public CollisionLayer team;
     //[HideInInspector]
@@ -75,7 +77,7 @@ public class AutoTurret : MonoBehaviour,PowerUpInterface
         if (!OnOrOff) return;
 
         var closestPlayerhandle = RapierWorld.world_get_closest_body(RapierWorld.world,
-                  playerBodyHandle,
+                  player.PlayerBody.entityHandle,
                   0,
                   0,
                   15,
@@ -85,17 +87,17 @@ public class AutoTurret : MonoBehaviour,PowerUpInterface
 
 
 
-        if (closestPlayerhandle != 0)
+        if (closestPlayerhandle != 0 )
         {
             //Debug.Log(team);
             GameSyncManager.rapierToUnityDatabase.TryGet(closestPlayerhandle, out var entity);
 
             var closestPlayerState = RapierWorld.body_get_state(RapierWorld.world, closestPlayerhandle);
-            var playerBodyState = RapierWorld.body_get_state(RapierWorld.world, playerBodyHandle);
+            var playerBodyState = RapierWorld.body_get_state(RapierWorld.world, player.PlayerBody.entityHandle);
 
             latestEnemyDirection = new Vector2(closestPlayerState.x - playerBodyState.x, closestPlayerState.y - playerBodyState.y);
 
-            if (shootCooldown <= 0)
+            if (shootCooldown <= 0 & player.weaponsAmmo[equipmentIdx] > 0)
             {
 
                 //var entityB = RapierToUnityDatabase.Get(closestPlayerhandle);
@@ -104,6 +106,8 @@ public class AutoTurret : MonoBehaviour,PowerUpInterface
                 if (bullet == null) return;
                 bullet.Shoot(playerBodyState.x, playerBodyState.y, latestEnemyDirection.normalized, 10f, team);
                 shootCooldown = shootCooldownTime;
+                player.weaponsAmmo[equipmentIdx] -= 1;
+                player.syncedUIstatesBitmask |= 1u << (equipmentIdx + 16);
             }
 
         }

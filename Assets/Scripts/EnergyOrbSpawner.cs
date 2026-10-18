@@ -1,14 +1,14 @@
 using UnityEngine;
 
-public class ItemBoxSpawner : MonoBehaviour
+public class EnergyOrbSpawner : MonoBehaviour
 {
 
     [SerializeField]
-    private GameObject activeItemBoxPrefab;
+    private GameObject activeEnergyOrbPrefab;
 
     [HideInInspector]
     public byte spawned;
-    private readonly float respawnCooldown = 5;
+    private readonly float respawnCooldown = 10;
     private float respawnTime;
 
     private void Start()
@@ -23,7 +23,7 @@ public class ItemBoxSpawner : MonoBehaviour
         respawnTime = respawnTime - (Time.deltaTime * Mathf.Abs(spawned-1));
         if (respawnTime <= 0)
         {
-            activeItemBoxPrefab.SetActive(true);
+            activeEnergyOrbPrefab.SetActive(true);
             spawned = 1;
             respawnTime = respawnCooldown;
         }

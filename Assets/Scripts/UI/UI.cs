@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using TMPro;
 using Unity.Mathematics;
 using Unity.Netcode;
 using UnityEngine;
@@ -73,7 +74,9 @@ public class UI : MonoBehaviour
 
     [SerializeField]
     private GameObject[] powerUpsUISlot;
-    private Button[] powerUpsUIbuttons = new Button[8];
+    //private Button[] powerUpsUIbuttons = new Button[8];
+    //private TextMeshProUGUI[] weaponsAmmoText = new TextMeshProUGUI[8];
+    private UiEquipment[] uiEquipments = new UiEquipment[8];
 
 
     [SerializeField]
@@ -101,12 +104,20 @@ public class UI : MonoBehaviour
      * 10 = powerup 2 substate
      * 11 = powerup 3 substate
      * 12 = powerup 4 substate
-     * 13= powerup 5 substate
+     * 13 = powerup 5 substate
      * 14 = powerup 6 substate
      * 15 = powerup 7 substate
      * 16 = powerup 8 substate
+     * 17 = weapon 1 ammo
+     * 18 = weapon 2 ammo
+     * 19 = weapon 3 ammo
+     * 20 = weapon 4 ammo
+     * 21 = weapon 5 ammo
+     * 22 = weapon 6 ammo
+     * 23 = weapon 7 ammo
+     * 24 = weapon 8 ammo
      *
-     * 17 = alive or dead UI
+     * 25 = alive or dead UI
      * 
      * 
      * 
@@ -170,8 +181,8 @@ public class UI : MonoBehaviour
 
                     GameObject GraplinHookUIPrefab = Resources.Load<GameObject>("Prefabs/PowerUpsUI/GraplingHookUIButton");
                     GameObject GraplinHookUIInstance = Instantiate(GraplinHookUIPrefab, powerUpsUISlot[i].transform);
-                    powerUpsUIbuttons[i] = GraplinHookUIInstance.GetComponent<Button>();
                     int GraplinHookIdx = i;
+                    uiEquipments[i] = GraplinHookUIInstance.GetComponent<UiEquipment>();
                     GraplinHookUIInstance.GetComponent<Button>().onClick.AddListener(() => SelectPowerUp(GraplinHookIdx));
                     var GraplinHookUiLink = playerNet.powerUpsGB[i].gameObject.AddComponent<PowerUpUiLink>();
                     GraplinHookUiLink.UIobject = GraplinHookUIInstance.transform.GetChild(0).gameObject;
@@ -188,8 +199,8 @@ public class UI : MonoBehaviour
 
                     GameObject PropellerUIPrefab = Resources.Load<GameObject>("Prefabs/PowerUpsUI/PropellerUIButton");
                     GameObject PropellerUIInstance = Instantiate(PropellerUIPrefab, powerUpsUISlot[i].transform);
-                    powerUpsUIbuttons[i] = PropellerUIInstance.GetComponent<Button>();
                     int PropellerIdx = i;
+                    uiEquipments[i] = PropellerUIInstance.GetComponent<UiEquipment>();
                     PropellerUIInstance.GetComponent<Button>().onClick.AddListener(() => SelectPowerUp(PropellerIdx));
                     var PropellerSelectUiLink = playerNet.powerUpsGB[i].gameObject.AddComponent<PowerUpUiLink>();
                     PropellerSelectUiLink.UIobject = PropellerUIInstance.transform.GetChild(0).gameObject;
@@ -201,9 +212,9 @@ public class UI : MonoBehaviour
 
                     GameObject AutoTurretUIPrefab = Resources.Load<GameObject>("Prefabs/PowerUpsUI/AutoTurretUIButton");
                     GameObject AutoTurretUIInstance = Instantiate(AutoTurretUIPrefab, powerUpsUISlot[i].transform);
-                    powerUpsUIbuttons[i] = AutoTurretUIInstance.GetComponent<Button>();
                     AutoTurretUIInstance.GetComponent<Image>().color = Color.blue;
                     int AutoTurretIdx = i;
+                    uiEquipments[i] = AutoTurretUIInstance.GetComponent<UiEquipment>();
                     AutoTurretUIInstance.GetComponent<Button>().onClick.AddListener(() => ChangePassivePowerUp(AutoTurretIdx));
 
                     var AutoTurretActiveUiLink = playerNet.powerUpsGB[i].gameObject.AddComponent<PowerUpUiLink>();
@@ -216,9 +227,9 @@ public class UI : MonoBehaviour
 
                     GameObject RifleUIPrefab = Resources.Load<GameObject>("Prefabs/PowerUpsUI/RifleUIButton");
                     GameObject RifleUIInstance = Instantiate(RifleUIPrefab, powerUpsUISlot[i].transform);
-                    powerUpsUIbuttons[i] = RifleUIInstance.GetComponent<Button>();
                     RifleUIInstance.GetComponent<Image>().color = Color.lightGray;
                     int RifleIdx = i;
+                    uiEquipments[i] = RifleUIInstance.GetComponent<UiEquipment>();
                     RifleUIInstance.GetComponent<Button>().onClick.AddListener(() => SelectPowerUp(RifleIdx));
 
                     RifleUIPrefab = null;
@@ -252,6 +263,7 @@ public class UI : MonoBehaviour
 
         /// OPTI
         uiRaycast.RebuildCache();
+        /// OPTI
         energyBar.value = playerNet.mechanicalState.energy / 100f;
         healthBar.value = playerNet.health / 100f;
 
@@ -286,11 +298,11 @@ public class UI : MonoBehaviour
                     break;
                 case PowerUp.GraplinHook:
                     aimAction = true;
-                    player.RegisterAction(Action.PowerUpAction2, Vector2.zero);
+                    player.RegisterAction(Action.PowerUpAction2, new Vector2(playerNet.mechanicalState.selectedPowerUpIdx,0));
                     break;
                 case PowerUp.Propeller:
                     aimAction = true;
-                    player.RegisterAction(Action.PowerUpAction1, Vector2.zero);
+                    //player.RegisterAction(Action.PowerUpAction1, Vector2.zero);
                     break;
                 case PowerUp.Rifle:
                     aimAction = true;
@@ -435,7 +447,7 @@ public class UI : MonoBehaviour
                 case 1u << 0:
                     if (((UIstatesBitmaskUpdate >> bitPlacement) & 1) == 1)
                     {
-                        powerUpsUIbuttons[0].Select();
+                        uiEquipments[0].powerUpsUIbutton.Select();
                     }
                     else
                     {
@@ -446,7 +458,7 @@ public class UI : MonoBehaviour
                 case 1u << 1:
                     if (((UIstatesBitmaskUpdate >> bitPlacement) & 1) == 1)
                     {
-                        powerUpsUIbuttons[1].Select();
+                        uiEquipments[1].powerUpsUIbutton.Select();
                     }
                     else
                     {
@@ -457,7 +469,7 @@ public class UI : MonoBehaviour
                 case 1u << 2:
                     if (((UIstatesBitmaskUpdate >> bitPlacement) & 1) == 1)
                     {
-                        powerUpsUIbuttons[2].Select();
+                        uiEquipments[2].powerUpsUIbutton.Select();
                     }
                     else
                     {
@@ -468,7 +480,7 @@ public class UI : MonoBehaviour
                 case 1u << 3:
                     if (((UIstatesBitmaskUpdate >> bitPlacement) & 1) == 1)
                     {
-                        powerUpsUIbuttons[3].Select();
+                        uiEquipments[3].powerUpsUIbutton.Select();
                     }
                     else
                     {
@@ -479,7 +491,7 @@ public class UI : MonoBehaviour
                 case 1u << 4:
                     if (((UIstatesBitmaskUpdate >> bitPlacement) & 1) == 1)
                     {
-                        powerUpsUIbuttons[4].Select();
+                        uiEquipments[4].powerUpsUIbutton.Select();
                     }
                     else
                     {
@@ -490,7 +502,7 @@ public class UI : MonoBehaviour
                 case 1u << 5:
                     if (((UIstatesBitmaskUpdate >> bitPlacement) & 1) == 1)
                     {
-                        powerUpsUIbuttons[5].Select();
+                        uiEquipments[5].powerUpsUIbutton.Select();
                     }
                     else
                     {
@@ -501,7 +513,7 @@ public class UI : MonoBehaviour
                 case 1u << 6:
                     if (((UIstatesBitmaskUpdate >> bitPlacement) & 1) == 1)
                     {
-                        powerUpsUIbuttons[6].Select();
+                        uiEquipments[6].powerUpsUIbutton.Select();
                     }
                     else
                     {
@@ -512,7 +524,7 @@ public class UI : MonoBehaviour
                 case 1u << 7:
                     if (((UIstatesBitmaskUpdate >> bitPlacement) & 1) == 1)
                     {
-                        powerUpsUIbuttons[7].Select();
+                        uiEquipments[7].powerUpsUIbutton.Select();
                     }
                     else
                     {
@@ -521,7 +533,56 @@ public class UI : MonoBehaviour
 
                     break;
 
+
                 case 1u << 16:
+
+                    uiEquipments[0].weaponAmmoText.text = playerNet.weaponsAmmo[0].ToString();
+                    playerNet.syncedUIstatesBitmask &= ~evaluatedBit;
+                    break;
+                case 1u << 17:
+
+                    uiEquipments[1].weaponAmmoText.text = playerNet.weaponsAmmo[1].ToString();
+                    playerNet.syncedUIstatesBitmask &= ~evaluatedBit;
+                    break;
+                case 1u << 18:
+
+                    uiEquipments[2].weaponAmmoText.text = playerNet.weaponsAmmo[2].ToString();
+                    playerNet.syncedUIstatesBitmask &= ~evaluatedBit;
+                    break;
+                case 1u << 19:
+
+                    uiEquipments[3].weaponAmmoText.text = playerNet.weaponsAmmo[3].ToString();
+                    playerNet.syncedUIstatesBitmask &= ~evaluatedBit;
+                    break;
+                case 1u << 20:
+
+                    uiEquipments[4].weaponAmmoText.text = playerNet.weaponsAmmo[4].ToString();
+                    playerNet.syncedUIstatesBitmask &= ~evaluatedBit;
+                    break;
+                case 1u << 21:
+
+                    uiEquipments[5].weaponAmmoText.text = playerNet.weaponsAmmo[5].ToString();
+                    playerNet.syncedUIstatesBitmask &= ~evaluatedBit;
+                    break;
+                case 1u << 22:
+
+                    uiEquipments[6].weaponAmmoText.text = playerNet.weaponsAmmo[6].ToString();
+                    playerNet.syncedUIstatesBitmask &= ~evaluatedBit;
+                    break;
+                case 1u << 23:
+
+                    uiEquipments[7].weaponAmmoText.text = playerNet.weaponsAmmo[7].ToString();
+                    playerNet.syncedUIstatesBitmask &= ~evaluatedBit;
+                    break;
+
+
+
+
+
+
+
+
+                case 1u << 24:
                     Debug.Log("die ui");
                     break;
 

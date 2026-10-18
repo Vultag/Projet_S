@@ -12,7 +12,8 @@ public class Propeller : MonoBehaviour, PowerUpInterface
     //private GameObject Thruster;
     [SerializeField]
     private GameObject flames;
-    public RapierBody playerBody;
+    //public RapierBody playerBody;
+    public PlayerNet player;
 
     private bool thrusting;
     private byte thrustingIndex;
@@ -58,13 +59,19 @@ public class Propeller : MonoBehaviour, PowerUpInterface
     {
         float angle = Mathf.Atan2(-dir.y, -dir.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.Euler(0f, 0f, angle-90f);
-        RapierWorld.AddForce(playerBody.entityHandle, -dir.normalized *50f, 0);
+        if (player.mechanicalState.energy >= 0.25f)
+        {
+            flames.SetActive(true);
+            player.mechanicalState.energy -= 0.25f;
+            RapierWorld.AddForce(player.PlayerBody.entityHandle, -dir.normalized * 50f, 0);
+        }
+        else
+            flames.SetActive(false);
     }
 
 
     public void PowerUpAction1(Vector2 delta)
     {
-        flames.SetActive(true);
     }
 
     public void PowerUpAction2(Vector2 delta)

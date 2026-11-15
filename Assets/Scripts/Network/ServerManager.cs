@@ -24,29 +24,15 @@ public class ServerManager : MonoBehaviour
     [HideInInspector]
     public StatePayload[] statePayloads = new StatePayload[4];
 
-    [HideInInspector]
-    public PlayerRigidbodyStates player1RigidbodyStates;
-    [HideInInspector]
-    public PlayerRigidbodyStates player2RigidbodyStates;
-    [HideInInspector]
-    public PlayerRigidbodyStates player3RigidbodyStates;
-    [HideInInspector]
-    public PlayerRigidbodyStates player4RigidbodyStates;
-
     private ServerManagerNet serverManagerNet;
 
     private uint maximumTickGap = 60;
 
-    private ServerDataDispatcher dataDispatcher;
+    private ushort CyclingRigidbodyStateCycleIdx;
 
     private void Awake()
     {
         serverManagerNet = this.GetComponent<ServerManagerNet>();
-        player1RigidbodyStates = new();
-        player2RigidbodyStates = new();
-        player3RigidbodyStates = new();
-        player4RigidbodyStates = new();
-        dataDispatcher = this.AddComponent<ServerDataDispatcher>();
         for (int i = 0; i < statePayloads.Length; i++)
         {
             statePayloads[i] = new StatePayload
@@ -108,28 +94,73 @@ public class ServerManager : MonoBehaviour
             return;
         }
 
-        short relativeTick;
+        short relativeTick = 0;
         /// PROCESS AS MUCH INPUT AS POSSIBLE TO OUTPUT THE PHYSICSTATES
         while (ServerManagerNet.tick < oldestCommonPayloadTick)
         {
-            ServerManagerNet.tick++;
-            GameSyncManager.gameManager.Tick();
-
             foreach (PlayerNet playerNet in GameSyncManager.Players)
             {
 
                 short leadingPayloadTickDiff = (short)(oldestCommonPayloadTick - playerNet.inputPayloadRBuffer.Read(0).tick);
                 relativeTick = (short)((ServerManagerNet.tick - oldestCommonPayloadTick)+ leadingPayloadTickDiff);
-                playerNet.actionQueue.Enqueue(playerNet.inputPayloadRBuffer.Read(relativeTick));
-                playerNet.Tick();
+                playerNet.Tick(relativeTick);
 
                 //if (playerNet.inputPayloadRBuffer.Read(relativeTick).pistonPush) Debug.Log("arm at " + (ServerManagerNet.tick));
             }
+            GameSyncManager.gameManager.Tick(0);
 
             RapierWorld.PhysicsStep(PlayerNet.gameFixedDeltaTime);
+            ServerManagerNet.tick++;
         }
 
-        dataDispatcher.shouldDispatch = true;
+        /// DATA DISPATCHING
+        {
+            {
+                byte i = 0;
+                foreach (PlayerNet playerNet in GameSyncManager.Players)
+                {
+                    statePayloads[i] = new StatePayload
+                    {
+                        tick = ServerManagerNet.tick-1,
+                        playerPhyState = RapierWorld.body_get_state(RapierWorld.world, playerNet.PlayerBody.entityHandle),
+                        pistonPhyState = RapierWorld.body_get_state(RapierWorld.world, playerNet.PistonBody.entityHandle),
+                        cogPhyState = RapierWorld.body_get_state(RapierWorld.world, playerNet.CogBody.entityHandle),
+                        playerMechanicsState = playerNet.mechanicalState
+                    };
+                    if (playerNet.mechanicalState.ticksTillPistonPushActivation == 0) Debug.Log("44454");
+                    i++;
+                }
+            }
+
+            CyclingRigidbodyStateCycleIdx = (ushort)((CyclingRigidbodyStateCycleIdx + 1) % serverManagerNet.CyclicSyncObjectsHandle.Count);
+            //Debug.Log(CyclingRigidbodyStateCycleIdx);
+            GameSyncManager.CyclingRigidbodyStateIdx = CyclingRigidbodyStateCycleIdx;
+            GameSyncManager.CyclingRigidbodyState = RapierWorld.body_get_state(RapierWorld.world, serverManagerNet.CyclicSyncObjectsHandle[CyclingRigidbodyStateCycleIdx].entityHandle);
+            //Debug.LogError(ServerManagerNet.tick - 1 + "   " + GameSyncManager.CyclingRigidbodyState.rotation);
+
+            //Debug.Log(serverManagerNet.CyclicSyncObjectsHandle[0]);
+
+            for (int i = 0; i < targetClientIds.Count; i++)
+            {
+                //Debug.Log("sent tick start : " + serverManager.statePayloads[0].tick);
+
+                //Debug.Log(serverManager.CyclicSyncObjectsHandle.Count);
+
+            
+                
+                serverManagerNet.SendLatestDataPayloadsClientRpc(
+
+                 ServerManagerNet.tick-1,
+                 statePayloads,
+                 GameSyncManager.CyclingRigidbodyState,
+                 GameSyncManager.CyclingRigidbodyStateIdx,
+                 new ClientRpcParams { Send = new ClientRpcSendParams { TargetClientIds = new[] { targetClientIds[i] } } }
+                 );
+
+            }
+         
+        }
+
 
     }
 
@@ -170,12 +201,15 @@ public class ServerManager : MonoBehaviour
 
         }
 
+
+
         GameObject newPlayer = Instantiate(
             serverManagerNet.playerPrefab,
             newPlayerSpawnPos,
             Quaternion.identity
         );
         var newPlayerNet = newPlayer.GetComponent<PlayerNet>();
+
 
         newPlayer.GetComponent<NetworkObject>()
               .SpawnAsPlayerObject(newClientId);
@@ -215,7 +249,13 @@ public class ServerManager : MonoBehaviour
           (uint)(CollisionLayer.Player | newPlayerNet.team)
           );
 
-        RapierWorld.AddForce(newPlayerNet.PlayerBody.entityHandle, startForceDir * 100, 0);
+        //RapierWorld.body_add_force(
+        //    RapierWorld.world,
+        //    newPlayerNet.PlayerBody.entityHandle,
+        //    startForceDir.x * 100,
+        //    startForceDir.y * 100,
+        //    0
+        //);
 
         newPlayerNet.enabled = true;
 
@@ -228,6 +268,12 @@ public class ServerManager : MonoBehaviour
             newPlayerNet.OwnerClientId, 
             new ClientRpcParams { Send = new ClientRpcSendParams { TargetClientIds = targetClientIds } }
             );
+
+
+        Camera.main.GetComponent<TrackPlayer>().PlayerGB = newPlayer.gameObject;
+        Camera.main.GetComponent<TrackPlayer>().enabled = true;
+
+        //Debug.Log("spawn at  " + ServerManagerNet.tick);
 
     }
 }

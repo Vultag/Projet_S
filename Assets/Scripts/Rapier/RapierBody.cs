@@ -30,23 +30,28 @@ public class RapierBody : MonoBehaviour
     [SerializeField]
     bool FreezeRotation;
     [SerializeField]
+    bool canSleep = true;
+    [SerializeField]
     bool isEnabled = true;
+
+    //public bool cyclicSyncing = false;
 
     void Awake()
     {
+        //Debug.Log(transform.position.x + "  " + gameObject.name);
+
         entityHandle = RapierWorld.body_create(
             RapierWorld.world, 
             (byte)bodyType, 
             Mass,
             transform.position.x, transform.position.y, 
-            Mathf.Deg2Rad*transform.localEulerAngles.z,
+            Mathf.Deg2Rad*transform.eulerAngles.z,
             LinearDampening,
             AngularDampening,
             FreezeRotation,
+            canSleep,
             isEnabled
             );
-
-
 
         var col_listeners = GetComponents<IRapierCollisionListener>();
         var trig_listeners = GetComponents<IRapierTriggerListener>();

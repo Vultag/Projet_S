@@ -232,7 +232,7 @@ public class PlayerNet : NetworkBehaviour, IDamageable
     private ClientPlayer clientPlayer;
 
     public uint syncedUIstatesBitmask;
-    public Queue<InputPayload> actionQueue;
+    public Queue<InputPayload> anteriorConfigurationActionQueue;
 
     public float health { get; set; } = 100;
     public float ROLLBACKhealth { get; set; }
@@ -244,6 +244,7 @@ public class PlayerNet : NetworkBehaviour, IDamageable
         //Debug.Log($"Spawned | IsOwner={IsOwner} | OwnerClientId={OwnerClientId} | LocalClientId={NetworkManager.Singleton.LocalClientId}");
 
         GameSyncManager.damageableDatabase.Add(PlayerBody.entityHandle, this);
+        GameSyncManager.damageableDatabase.Add(PistonBody.entityHandle, this);
         mechanicalState = MechanicsState.Default();
         latestSyncedMechanicsStatePayload = MechanicsState.Default();
         latestServerStatePayload.playerMechanicsState = MechanicsState.Default();
@@ -364,9 +365,14 @@ public class PlayerNet : NetworkBehaviour, IDamageable
         inputPayloadRBufferTransmitor = new RingBuffer<InputPayload>(PlayerNet.PayloadTransmiotorRBufferSize);
 
         var queueSize = player != null ? 2 : 64;
-        actionQueue = new Queue<InputPayload>(queueSize);
+        anteriorConfigurationActionQueue = new Queue<InputPayload>(queueSize);
 
-        GameSyncManager.GameSyncSave();
+
+        PlayerBody.gameObject.SetActive(true);
+        CogBody.gameObject.SetActive(true);
+        PistonBody.gameObject.SetActive(true);
+
+        ///GameSyncManager.GameSyncSave();
 
     }
 
@@ -424,31 +430,25 @@ public class PlayerNet : NetworkBehaviour, IDamageable
         RapierWorld.body_set_state(RapierWorld.world, PlayerBody.entityHandle, State.playerPhyState);
         RapierWorld.body_set_state(RapierWorld.world, PistonBody.entityHandle, State.pistonPhyState);
         RapierWorld.body_set_state(RapierWorld.world, CogBody.entityHandle, State.cogPhyState);
+        ///
+        //var tempa = RapierWorld.body_get_state(RapierWorld.world, PlayerBody.entityHandle);
+        //var tempb = RapierWorld.body_get_state(RapierWorld.world, PistonBody.entityHandle);
+        //var tempc = RapierWorld.body_get_state(RapierWorld.world, CogBody.entityHandle);
+
+        //RapierWorld.body_set_state(RapierWorld.world, PlayerBody.entityHandle, tempa);
+        //RapierWorld.body_set_state(RapierWorld.world, PistonBody.entityHandle, tempb);
+        //RapierWorld.body_set_state(RapierWorld.world, CogBody.entityHandle, tempc);
 
         ///RestoreState(State.playerMechanicsState);
     }
 
-    private void ProcessAction(Action action, Vector2 delta)
+    #region Action Processing
+    public void ProcessAnteriorConfigurationAction(Action configurationAction, Vector2 delta)
     {
         //int activePowerUpZeroedIdx = (int)mechanicalState.selectedPowerUpZeroedIdx;
-        switch (action)
+        switch (configurationAction)
         {
-            case Action.None:
-                break;
-            case Action.Roll:
-                var state = RapierWorld.body_get_state(RapierWorld.world, PlayerBody.entityHandle);
-                int direction = Math.Sign(delta.x);
-                RapierWorld.AddForce(PlayerBody.entityHandle, Vector2.zero, (60 * -direction) - (state.angularVelocity * 2f * Mathf.Abs(-direction)));
-                break;
-            case Action.Push:
-                mechanicalState.pistonPushArmed = 1;
-                nextPistonPushDirection = delta;
-                break;
             case Action.ChangeSelectedPowerUp:
-
-                //PowerUp newPowerUp = (PowerUp)delta.x;
-                //var activePowerUpSlot = equipedPowerUpSlotMap[activePowerUp];
-                //var newPowerUpSlot = equipedPowerUpSlotMap[newPowerUp];
 
                 if (mechanicalState.selectedPowerUpIdx >= 0)
                 {
@@ -470,12 +470,52 @@ public class PlayerNet : NetworkBehaviour, IDamageable
                 syncedUIstatesBitmask = (uint)(syncedUIstatesBitmask & ~(1u << powerUpIdx) | (newPowerUpState << powerUpIdx));
 
                 break;
-            //case Action.CancelPowerUp:
+        }
 
-            //    powerUps[(int)delta.x].PowerUpAction2(Vector2.zero);
-            //    mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates & ~(1 << (byte)delta.x));
+    }
+    private void ProcessAction(Action action, Vector2 delta)
+    {
+        switch (action)
+        {
+            case Action.None:
+                break;
+            case Action.Roll:
+                var state = RapierWorld.body_get_state(RapierWorld.world, PlayerBody.entityHandle);
+                int direction = Math.Sign(delta.x);
+                RapierWorld.body_add_force(
+                    RapierWorld.world,
+                    PlayerBody.entityHandle,
+                    0,
+                    0,
+                    (60 * -direction) - (state.angularVelocity * 2f * Mathf.Abs(-direction))
+                );
+                break;
+            case Action.Push:
+                mechanicalState.pistonPushArmed = 1;
+                nextPistonPushDirection = delta;
+                break;
+            case Action.ChangeSelectedPowerUp:
 
-            //    break;
+                if (mechanicalState.selectedPowerUpIdx >= 0)
+                {
+                    powerUps[mechanicalState.selectedPowerUpIdx].PowerUpSelection(false);
+                }
+                if (delta.x >= 0)
+                {
+                    powerUps[(int)delta.x].PowerUpSelection(true);
+                }
+                mechanicalState.selectedPowerUpIdx = (int)delta.x;
+                syncedUIstatesBitmask |= (1u << (int)(delta.x));
+
+                break;
+            case Action.ChangePassivePowerUp:
+                int powerUpIdx = (int)delta.x;
+                uint newPowerUpState = (uint)((mechanicalState.PowerUpsStates >> powerUpIdx) & 1)^1;
+                powerUps[powerUpIdx].PowerUpSelection(newPowerUpState == 1);
+                mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates & ~(1u << powerUpIdx) | (newPowerUpState << powerUpIdx));
+                syncedUIstatesBitmask = (uint)(syncedUIstatesBitmask & ~(1u << powerUpIdx) | (newPowerUpState << powerUpIdx));
+
+                break;
             case Action.Aim:
                 /// OPTI: useless condition ?
                 if(mechanicalState.selectedPowerUpIdx >= 0)
@@ -500,30 +540,16 @@ public class PlayerNet : NetworkBehaviour, IDamageable
             case Action.PowerUpPassifAction2:
                 powerUps[(int)delta.x].PowerUpAction2(Vector2.zero);
                 break;
-                //case Action.GraplingShoot:
-                //    powerUps[(int)PowerUp.GraplinHook-1].PowerUpAction1(delta);
-                //    mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates | (1 << (byte)PowerUp.GraplinHook-1));
-                //    break;
-                //case Action.GraplingDetatch:
-                //    powerUps[(int)PowerUp.GraplinHook-1].PowerUpAction2(delta);
-                //    mechanicalState.PowerUpsStates = (byte)(mechanicalState.PowerUpsStates & ~(1 << (byte)PowerUp.GraplinHook-1));
-                //    break;
-                //case Action.PropellingStart:
-                //    powerUps[(int)PowerUp.Propeller - 1].PowerUpAction1(delta);
-                //    break;
-                //case Action.PropellingStop:
-                //    powerUps[(int)PowerUp.Propeller - 1].PowerUpAction2(delta);
-                //    break;
         }
 
     }
+    #endregion
 
-    public void Tick()
+    public void Tick(short relativeTick)
     {
-        ///InputPayload payload = inputPayloadRBuffer.Read(relativeTick);
-        ///actionQueue.Enqueue(inputPayloadRBuffer.Read(relativeTick));
+        InputPayload payload = inputPayloadRBuffer.Read(relativeTick);
 
-        mechanicalState.energy = Mathf.Min(mechanicalState.energy + 0.08f, 100);
+        mechanicalState.energy = Mathf.Min(mechanicalState.energy + 0.08f*50, 100);
 
         /// OPTI ?
         for (int i = 0; i < 8; i++)
@@ -533,13 +559,8 @@ public class PlayerNet : NetworkBehaviour, IDamageable
             powerUps[i].Tick(((mechanicalState.PowerUpsStates>>i)&1) ==1);
         }
 
-        //if (actionQueue.Count == 0) Debug.Log("poazeoaze");
-        while (actionQueue.Count !=0)
-        {
-            InputPayload action = actionQueue.Dequeue();
-            ProcessAction(action.action1, action.action1Delta);
-            ProcessAction(action.action2, action.action2Delta);
-        }
+        ProcessAction(payload.action1, payload.action1Delta);
+        ProcessAction(payload.action2, payload.action2Delta);
 
         mechanicalState.revertCooldown = (byte)(mechanicalState.revertCooldown - mechanicalState.activeRevertCooldown);
         mechanicalState.ticksTillPistonPushActivation = (byte)(mechanicalState.ticksTillPistonPushActivation - mechanicalState.pistonPushArmed);
@@ -556,17 +577,19 @@ public class PlayerNet : NetworkBehaviour, IDamageable
         }
         if (mechanicalState.ticksTillPistonPushActivation == 0)
         {
+            //if(GetComponent<Player>() != null)
+            //{
+            //    RapierWorld.body_set_rotation(RapierWorld.world, PlayerBody.entityHandle, 0);
+            //}
+
             BodyStateFFI newPistonState = RapierWorld.body_get_state(RapierWorld.world, PistonBody.entityHandle);
             BodyStateFFI cogState = RapierWorld.body_get_state(RapierWorld.world, CogBody.entityHandle);
             newPistonState.x = cogState.x;
             newPistonState.y = cogState.y;
-            //Debug.Log(newPistonState.x + "   " + newPistonState.y);
-            //newPistonState.velocityX = 0;
-            //newPistonState.velocityY = 0;
-            //newPistonState.angularVelocity = 0;
-            RapierWorld.body_set_state(RapierWorld.world, PistonBody.entityHandle, newPistonState);
-            PistonRotate(nextPistonPushDirection);
+
+            //RapierWorld.body_set_state(RapierWorld.world, PistonBody.entityHandle, newPistonState);
             setMotorPush();
+            PistonRotate(nextPistonPushDirection);
             ////Debug.Log("push at index in buffer : " + ((inputPayloadRBuffer.head + relativeTick) % 512) + "   rollback : " + relativeTick + "    local tick : " + ServerManagerNet.tick + "    combined : " + (ServerManagerNet.tick + relativeTick) + "    head : " + inputPayloadRBuffer.head);
             //Debug.Log("push at " + (ServerManagerNet.tick + relativeTick));
 
@@ -584,9 +607,8 @@ public class PlayerNet : NetworkBehaviour, IDamageable
     }
     private void setMotorPush()
     {
-        //Debug.Log("aaaa");
-        //Pistonjoint.motor = PushM;
         RapierWorld.joint_set_prismatic_motor(RapierWorld.world, Pistonjoint.handle, 2.5f, 15000, 160, 20000);
+        //Debug.Log("aaaa");
         mechanicalState.activeRevertCooldown = 1;
         mechanicalState.pistonPushArmed = 0;
         mechanicalState.revertCooldown = 120;
@@ -609,6 +631,17 @@ public class PlayerNet : NetworkBehaviour, IDamageable
         //Pistonjoint.angle = -Mathf.Atan2(dir.x, dir.y) * Mathf.Rad2Deg - 90;
         //RapierWorld.body_set_rotation(RapierWorld.world, CogBody.entityHandle, angle);
         mechanicalState.pistonAngle = -Mathf.Atan2(dir.x, dir.y);
+        var playerState = RapierWorld.body_get_state(RapierWorld.world,PlayerBody.entityHandle);
+        var pistonState = RapierWorld.body_get_state(RapierWorld.world, PistonBody.entityHandle);
+        RapierWorld.body_set_state(RapierWorld.world, PistonBody.entityHandle, new BodyStateFFI
+        {
+            x = playerState.x,
+            y = playerState.y,
+            velocityX = 0,
+            velocityY = 0,
+            angularVelocity = 0,
+            rotation = mechanicalState.pistonAngle,
+        });
         RapierWorld.body_set_rotation(RapierWorld.world, CogBody.entityHandle, mechanicalState.pistonAngle);
     }
     private void PistonRotate(float angle)
@@ -716,7 +749,7 @@ public class PlayerNet : NetworkBehaviour, IDamageable
             //Debug.Log(((transmitorHead - i) + PlayerNet.PayloadTransmiotorRBufferSize) % PlayerNet.PayloadTransmiotorRBufferSize);
             InputPayload inputs = inputPayloadTransmitor[((transmitorHead - i) + PlayerNet.PayloadTransmiotorRBufferSize) % PlayerNet.PayloadTransmiotorRBufferSize];
             inputPayloadRBuffer.Write(inputs);
-            actionQueue.Enqueue(inputs);
+            anteriorConfigurationActionQueue.Enqueue(inputs);
             //if (inputPayloadRBuffer.Read(0).action1 == Action.Push) Debug.Log("push recived at " + Time.realtimeSinceStartup);
         }
         latestInputsRecivedTick = tick;
@@ -778,7 +811,13 @@ public class PlayerNet : NetworkBehaviour, IDamageable
         PlayerBody.gameObject.SetActive(true);
         health = 100;
 
-        RapierWorld.AddForce(player.PlayerBody.entityHandle, force, 0);
+        RapierWorld.body_add_force(
+               RapierWorld.world,
+               player.PlayerBody.entityHandle,
+               force.x,
+               force.y,
+               0
+           );
 
         if (IsOwner)
             player.ui.RespawnSwitch(true);

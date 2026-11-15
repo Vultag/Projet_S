@@ -25,8 +25,6 @@ public class RapierRopeJoint : MonoBehaviour
 
     void Awake()
     {
-        Debug.Log("ee");
-
         if (!TryGetComponent<RapierBody>(out var body)) Debug.Log("NO BODY ON JOINT");
         bool connectedToWorld = connectedBody == null;
 
@@ -39,8 +37,8 @@ public class RapierRopeJoint : MonoBehaviour
                 enableCollision,
                 anchor.x,
                 anchor.y,
-                connectedAnchor.x,
-                connectedAnchor.y,
+                connectedToWorld ? transform.position.x + connectedAnchor.x : connectedAnchor.x,
+                connectedToWorld ? transform.position.y + connectedAnchor.y : connectedAnchor.y,
                 maxDistance,
                 startEnabled
             );

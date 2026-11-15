@@ -55,6 +55,7 @@ public class RapierSliderJoint : MonoBehaviour
 
     private void Awake()
     {
+        //Debug.LogError(transform.localPosition.x + connectedAnchor.x + "  " + gameObject.name);
 
         if (!TryGetComponent<RapierBody>(out var body)) Debug.Log("NO BODY ON JOINT");
         bool connectedToWorld = connectedBody == null;
@@ -69,8 +70,8 @@ public class RapierSliderJoint : MonoBehaviour
             enableCollision,
             anchor.x,
             anchor.y,
-            connectedAnchor.x,
-            connectedAnchor.y,
+                connectedToWorld ? transform.position.x + connectedAnchor.x : connectedAnchor.x,
+                connectedToWorld ? transform.position.y + connectedAnchor.y : connectedAnchor.y,
 
             axisX, axisY,
 

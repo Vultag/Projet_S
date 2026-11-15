@@ -34,8 +34,8 @@ public class RapierFixedJoint : MonoBehaviour
                 enableCollision,
                 anchor.x,
                 anchor.y,
-                connectedAnchor.x,
-                connectedAnchor.y,
+                connectedToWorld ? transform.position.x + connectedAnchor.x : connectedAnchor.x,
+                connectedToWorld ? transform.position.y + connectedAnchor.y : connectedAnchor.y,
                 startEnabled
             );
 

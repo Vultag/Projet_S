@@ -121,18 +121,19 @@ public class Player : MonoBehaviour
 
         playerNet.ProcessInputPayload(activeInputPayload);
 
+        GameSyncManager.DEBUGreconciliating = true;
         serverManagerNet.Reconciliation();
-
-        playerNet.actionQueue.Enqueue(activeInputPayload);
+        GameSyncManager.DEBUGreconciliating = false;
 
         if (actionNumThisFrame > 2)
         {
             Debug.LogWarning("more tow action this frame");
         }
 
-        GameSyncManager.gameManager.Tick();
 
-        playerNet.Tick();
+        playerNet.Tick(0);
+
+        GameSyncManager.gameManager.Tick(0);
 
         RapierWorld.PhysicsStep(PlayerNet.gameFixedDeltaTime);
 

@@ -108,7 +108,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &2025293859786627100
 Transform:
   m_ObjectHideFlags: 0
@@ -146,7 +146,9 @@ MonoBehaviour:
   AngularDampening: 0.05
   restitution: 0
   FreezeRotation: 0
+  canSleep: 0
   isEnabled: 1
+  cyclicSyncing: 0
 --- !u!114 &8668018020538567222
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -183,7 +185,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &6338581325726315455
 Transform:
   m_ObjectHideFlags: 0
@@ -219,7 +221,9 @@ MonoBehaviour:
   AngularDampening: 0.05
   restitution: 0
   FreezeRotation: 0
+  canSleep: 0
   isEnabled: 1
+  cyclicSyncing: 0
 --- !u!114 &6390334922319022345
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -299,7 +303,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &2890065402387040583
 Transform:
   m_ObjectHideFlags: 0
@@ -365,7 +369,9 @@ MonoBehaviour:
   AngularDampening: 0.05
   restitution: 0
   FreezeRotation: 1
+  canSleep: 0
   isEnabled: 1
+  cyclicSyncing: 0
 --- !u!114 &1405723547155026422
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -795,7 +801,7 @@ MonoBehaviour:
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
-  SynchronizeTransform: 0
+  SynchronizeTransform: 1
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -822,11 +828,13 @@ MonoBehaviour:
   Pistonjoint: {fileID: 2619005271190560227}
   Cogjoint: {fileID: 3417983567630895559}
   playerIcon: {fileID: 6111469343795154252}
+  nextPistonPushDirectionRollback: {x: 0, y: 0}
   team: 0
   equipedPowerUpMap: 0000000000000000000000000000000000000000000000000000000000000000
   powerUpsGB:
   - {fileID: 0}
   - {fileID: 0}
+  weaponsAmmo: 0000000000000000000000000000000000000000000000000000000000000000
   latestInputsRecivedTick: 0
   syncedUIstatesBitmask: 0
 --- !u!114 &6606335824929717548

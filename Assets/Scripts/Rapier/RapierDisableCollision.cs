@@ -7,7 +7,6 @@ public class RapierDisableCollision : MonoBehaviour
 
     void Awake()
     {
-
         RapierWorld.ignore_collision(RapierWorld.world, this.GetComponent<RapierBody>().entityHandle, withBody.entityHandle, true);
     }
 }

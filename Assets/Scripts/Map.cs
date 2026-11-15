@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Map : MonoBehaviour
@@ -8,6 +9,8 @@ public class Map : MonoBehaviour
     public GameObject TeamAspawner;
     public GameObject TeamBspawner;
 
+    public List<ISyncronizable> Syncronized = new List<ISyncronizable>(16);
+
     [HideInInspector]
     public PlayerSpawner playerSpawner;
 
@@ -15,6 +18,7 @@ public class Map : MonoBehaviour
     {
         playerSpawner = this.GetComponent<PlayerSpawner>();
         playerSpawner.map = this;
+        Syncronized.Add(playerSpawner);
 
         foreach (var item in TeamAspawner.GetComponentsInChildren<SpriteRenderer>())
         {

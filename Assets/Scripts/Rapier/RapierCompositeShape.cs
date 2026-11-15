@@ -27,8 +27,20 @@ public class RapierCompositeShape : MonoBehaviour
             Mathf.Deg2Rad * transform.localEulerAngles.z,
             0,0,
             false,
+            false,
             true
             );
+
+
+        var col_listeners = GetComponents<IRapierCollisionListener>();
+        var trig_listeners = GetComponents<IRapierTriggerListener>();
+        GameSyncManager.rapierToUnityDatabase.Add(handle, new EntityData
+        {
+            GameObject = gameObject,
+            Transform = transform,
+            col_listener = col_listeners,
+            trig_listener = trig_listeners
+        });
 
         if (composite.pathCount != 1) Debug.Log(" PATH PROBLEM");
 

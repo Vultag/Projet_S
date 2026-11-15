@@ -9,9 +9,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1843451999254988676}
-  - component: {fileID: 8067785321837000772}
-  - component: {fileID: 557737908854346906}
   - component: {fileID: 2917336315520699624}
+  - component: {fileID: 8176044996568514739}
+  - component: {fileID: 4701722511237459219}
   m_Layer: 11
   m_Name: ERods
   m_TagString: Untagged
@@ -35,44 +35,6 @@ Transform:
   - {fileID: 2687477462213421977}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 45}
---- !u!114 &8067785321837000772
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1708764062242690234}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2733077871
-  InScenePlacedSourceGlobalObjectIdHash: 0
-  DeferredDespawnTick: 0
-  Ownership: 1
-  AlwaysReplicateAsRoot: 0
-  SynchronizeTransform: 0
-  ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 0
-  SpawnWithObservers: 1
-  DontDestroyWithOwner: 0
-  AutoObjectParentSync: 0
-  SyncOwnerTransformWhenParented: 0
-  AllowOwnerToParent: 0
---- !u!114 &557737908854346906
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1708764062242690234}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6d740c30bc5210645851ce253b8079b3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ERod
-  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &2917336315520699624
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -85,10 +47,48 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 149f040a22a63ee43af166f14aeb252d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RapierBoxShape
-  entityHandle: 0
+  colliderHandle: 0
+  layers: 2
   dimentions:
     x: 1
     y: 4.25
+  friction: 0
+  isSensor: 0
+--- !u!114 &8176044996568514739
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1708764062242690234}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a90449a7f39ccf9468a60fd43b390884, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RapierBody
+  entityHandle: 0
+  bodyType: 2
+  Mass: 1
+  LinearDampening: 0
+  AngularDampening: 0
+  restitution: 0
+  FreezeRotation: 0
+  canSleep: 1
+  isEnabled: 1
+  cyclicSyncing: 0
+--- !u!114 &4701722511237459219
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1708764062242690234}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8df80cf0c7b27f64db76ca9c6d2a043e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HarmfullSurface
+  damage: 60
 --- !u!1 &2702616041517210946
 GameObject:
   m_ObjectHideFlags: 0

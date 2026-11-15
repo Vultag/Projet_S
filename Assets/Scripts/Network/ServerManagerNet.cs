@@ -6,7 +6,7 @@ using UnityEngine;
 
 public struct rigidbodyState : INetworkSerializable
 {
-    public ushort rigidbodyNetId;
+    public ulong rigidbodyNetId;
     public BodyStateFFI phyState;
 
     public void NetworkSerialize<T>(BufferSerializer<T> s)
@@ -49,14 +49,19 @@ public class ServerManagerNet : NetworkBehaviour
 
     private bool pendingServerData;
 
+    public List<RapierBody> CyclicSyncObjectsHandle;
+
     private void Awake()
     {
         GameSyncManager.bulletPool = FindAnyObjectByType<BulletPool>(FindObjectsInactive.Include);
     }
 
-    /// RE IMPLEMENT PASSING BODIES STATES IN THE FUTURE ?
     [ClientRpc(Delivery = RpcDelivery.Unreliable)]
-    public void SendLatestDataPayloadsClientRpc(uint tick, byte rigidbodyNumber, rigidbodyState[] rigidbodyStates, StatePayload[] playersStatePayloads, ClientRpcParams rpcParams)
+    public void SendLatestDataPayloadsClientRpc(uint tick, 
+        StatePayload[] playersStatePayloads,
+        BodyStateFFI CycleSyncObjectState,
+        ushort CycleSyncObjectStateIdx,
+        ClientRpcParams rpcParams)
     {
         /// Discard outdated ServerStatePayloads
         if (tick <= latestServerStatePayloadTick)
@@ -71,24 +76,14 @@ public class ServerManagerNet : NetworkBehaviour
         latestServerStatePayloadTick = tick;
         pendingServerData = true;
 
-        //Debug.Log(rigidbodyNumber);
-
-        for (int i = 0; i < rigidbodyNumber; i++)
-        {
-            Debug.Log("rezrzerzea;fmlgqoq,nolnikqogni");
-            /// OPIT : over all spawned objects -> PB?
-            //var rigidbody = NetworkManager.Singleton.SpawnManager.SpawnedObjects[rigidbodyStates[i].rigidbodyNetId].GetComponent<Rigidbody2D>();
-            //rigidbody.position = rigidbodyStates[i].phyState.position;
-            //rigidbody.rotation = rigidbodyStates[i].phyState.rotation;
-            //rigidbody.linearVelocity = rigidbodyStates[i].phyState.linearVelocity;
-            //rigidbody.angularVelocity = rigidbodyStates[i].phyState.angularVelocity;
-        }
-
         for (int i = 0; i < GameSyncManager.Players.Count; i++)
         {
             GameSyncManager.Players[i].latestServerStatePayload = playersStatePayloads[i];
             //Debug.Log("receive tick start : " +playersStatePayloads[i].tick);
         }
+        GameSyncManager.CyclingRigidbodyState = CycleSyncObjectState;
+        GameSyncManager.CyclingRigidbodyStateIdx = CycleSyncObjectStateIdx;
+        //Debug.Log(CyclicSyncObjectsHandle[0]);
     }
 
     /// OPTI GC
@@ -198,10 +193,22 @@ public class ServerManagerNet : NetworkBehaviour
                 break;
         }
 
-        RapierWorld.AddForce(newPlayer.PlayerBody.entityHandle, startForceDir * 100, 0);
+        //RapierWorld.body_add_force(
+        //      RapierWorld.world,
+        //      newPlayer.PlayerBody.entityHandle,
+        //      startForceDir.x * 100,
+        //      startForceDir.y * 100,
+        //      0
+        //  );
+
 
         /// Sync stick
-        ServerManagerNet.tick = statePayload.tick;
+        if (newPlayer.IsLocalPlayer)
+        {
+            ServerManagerNet.tick = statePayload.tick;
+            Debug.Log(newPlayer.IsLocalPlayer);
+        }
+        Debug.Log("spawn at  " + ServerManagerNet.tick);
 
         //for (int i = 0; i < GameSyncManager.Players.Count; i++)
         //{
@@ -324,6 +331,7 @@ public class ServerManagerNet : NetworkBehaviour
         //Debug.LogError("ROLLBACKsave");
         GameSyncManager.GameSyncSave();
         latestServerStatePayloadTick = tick;
+        syncedTick = tick;
         
     }
 
@@ -342,7 +350,7 @@ public class ServerManagerNet : NetworkBehaviour
             return;
         }
 
-        //Debug.Log(GameSyncManager.Players.Count);
+
         //foreach (PlayerNet player in GameSyncManager.Players)
         //{
         //    Debug.Log(player.);
@@ -378,6 +386,8 @@ public class ServerManagerNet : NetworkBehaviour
         {
             return;
         }
+        //Debug.Log("recon " + ServerManagerNet.tick);
+
 
         if (GameSyncManager.Players.Count == 0)
             Debug.Log("eeeeeeeeeeeee");
@@ -390,17 +400,17 @@ public class ServerManagerNet : NetworkBehaviour
         /// syncing
         {
             short RollbackTicksTillSync = (short)(syncedTick - latestServerStatePayloadTick);
+            short relativeRollbackTicksTillSync = 0;
             while (syncedTick <= latestServerStatePayloadTick)
             {
-                GameSyncManager.gameManager.Tick();
                 foreach (PlayerNet playerNet in GameSyncManager.Players)
                 {
-                    short relativeRollbackTicksTillSync = (short)(RollbackTicksTillSync - (playerNet.latestInputsRecivedTick - latestServerStatePayloadTick));
-                    if (playerNet.actionQueue.Count > 0) Debug.LogError("ppppppppppp");
-                    playerNet.actionQueue.Enqueue(playerNet.inputPayloadRBuffer.Read(relativeRollbackTicksTillSync));
-                    playerNet.Tick();
+                    relativeRollbackTicksTillSync = (short)(RollbackTicksTillSync - (playerNet.latestInputsRecivedTick - latestServerStatePayloadTick));
+                    playerNet.Tick(relativeRollbackTicksTillSync);
                     ///Debug.Log(player.inputPayloadRBuffer.Read(relativeRollbackTicksTillSync).direction);
                 }
+                GameSyncManager.gameManager.Tick((short)(syncedTick - tick));
+
                 RapierWorld.PhysicsStep(PlayerNet.gameFixedDeltaTime);
                 RollbackTicksTillSync++;
                 syncedTick++;
@@ -411,32 +421,46 @@ public class ServerManagerNet : NetworkBehaviour
         foreach (PlayerNet player in GameSyncManager.Players)
         {
             /// Debuging restore and condition, its supposed to be the same
+            /// IT Breakes non synced dynamic objects somehow -> exacts data wrong?
+            //var temp = RapierWorld.body_get_state(RapierWorld.world, player.PlayerBody.entityHandle);
             player.RestoreState(player.latestServerStatePayload);
+            //Debug.Log(new Vector2(player.latestServerStatePayload.playerPhyState.x- temp.x, player.latestServerStatePayload.playerPhyState.y-temp.y));
 
             if (player.latestServerStatePayload.playerMechanicsState.ticksTillPistonPushActivation != player.mechanicalState.ticksTillPistonPushActivation) Debug.LogError("ccccccccc " + player.latestServerStatePayload.playerMechanicsState.ticksTillPistonPushActivation + "   " + player.mechanicalState.ticksTillPistonPushActivation);
-            ////player.UpdateSyncedStates();
         }
 
         //Debug.Log("ROLLBACKsave");
-        GameSyncManager.GameSyncSave();
-        syncedTick = ++latestServerStatePayloadTick;
 
-        short rollbackTicksForProjection = (short)(latestServerStatePayloadTick - tick);
+        RapierWorld.body_set_state(RapierWorld.world, CyclicSyncObjectsHandle[GameSyncManager.CyclingRigidbodyStateIdx].entityHandle, GameSyncManager.CyclingRigidbodyState);
+        //Debug.LogError(latestServerStatePayloadTick + "   " + GameSyncManager.CyclingRigidbodyState.rotation);
+        
+        GameSyncManager.GameSyncSave();
+        if (syncedTick != latestServerStatePayloadTick + 1) Debug.Log("azeaze");
+        syncedTick = latestServerStatePayloadTick+1;
+
+
+        short rollbackTicksForProjection = (short)((latestServerStatePayloadTick+1) - tick);
+        if(rollbackTicksForProjection>0) Debug.Log("wxcwxcwxc");
 
         /// projection
-        while (rollbackTicksForProjection < 0)
         {
-            GameSyncManager.gameManager.Tick();
-            foreach (PlayerNet playerNet in GameSyncManager.Players)
+            while (rollbackTicksForProjection < 0)
             {
-                short relativeRollbackTicksForProjection = (short)Mathf.Min((rollbackTicksForProjection + (tick - playerNet.latestInputsRecivedTick)),0);
-                if (playerNet.actionQueue.Count > 0) Debug.LogError("nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn");
-                playerNet.actionQueue.Enqueue(playerNet.inputPayloadRBuffer.Read(relativeRollbackTicksForProjection));
-                playerNet.Tick();
+                foreach (PlayerNet playerNet in GameSyncManager.Players)
+                {
+                    short relativeRollbackTicksForProjection = (short)Mathf.Min((rollbackTicksForProjection + (tick - playerNet.latestInputsRecivedTick)), 0);
+                    playerNet.Tick(relativeRollbackTicksForProjection);
+                }
+                GameSyncManager.gameManager.Tick(rollbackTicksForProjection);
+
+                RapierWorld.PhysicsStep(PlayerNet.gameFixedDeltaTime);
+                rollbackTicksForProjection++;
             }
-            RapierWorld.PhysicsStep(PlayerNet.gameFixedDeltaTime);
-            rollbackTicksForProjection++;
         }
+    
+
+        GameSyncManager.rapierToUnityDatabase.TryGet(CyclicSyncObjectsHandle[GameSyncManager.CyclingRigidbodyStateIdx].entityHandle, out var teete);
+        //Debug.Log(ServerManagerNet.tick + "   " +  teete.GameObject.name);
 
         pendingServerData = false;
 

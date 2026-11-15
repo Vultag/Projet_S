@@ -11,6 +11,8 @@ public class ConfigureNetwork : MonoBehaviour
 
     [SerializeField] private GameObject serverManagerGB;
 
+
+
     void Start()
     {
         NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
@@ -32,6 +34,7 @@ public class ConfigureNetwork : MonoBehaviour
             serverManagerGB.GetComponent<ServerManager>().enabled = true;
             serverManagerGB.GetComponent<ServerManager>().playerJoin(clientId);
             ///playerObj.GetComponentInChildren<ObjectsStatesCollector>().enabled = true;
+            ///
             
         }
         else
@@ -43,6 +46,13 @@ public class ConfigureNetwork : MonoBehaviour
 
     public void StartServer()
     {
+        //var serverManagerNet = serverManagerGB.GetComponent<ServerManagerNet>();
+        //var bodies = FindObjectsByType<RapierBody>(FindObjectsSortMode.InstanceID);
+        //foreach (var item in bodies)
+        //{
+        //    if (item.cyclicSyncing) serverManagerNet.CyclicSyncObjectsHandle.Add(item.entityHandle);
+        //}
+
         var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
 
         transport.SetConnectionData(
@@ -54,9 +64,17 @@ public class ConfigureNetwork : MonoBehaviour
         bool result = NetworkManager.Singleton.StartServer();
 
 
+
     }
     public void JoinServer()
     {
+        //var serverManagerNet = serverManagerGB.GetComponent<ServerManagerNet>();
+        //var bodies = FindObjectsByType<RapierBody>(FindObjectsSortMode.InstanceID);
+        //foreach (var item in bodies)
+        //{
+        //    if (item.cyclicSyncing) serverManagerNet.CyclicSyncObjectsHandle.Add(item.entityHandle);
+        //}
+
         var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
 
         transport.SetConnectionData(

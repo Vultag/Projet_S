@@ -17,6 +17,8 @@ public struct ColTrigEvent
 {
     public ulong EntityA;
     public ulong EntityB;
+    public float normalX;
+    public float normalY;
     /// later enter/exit...
     //public byte type;
 }
@@ -74,7 +76,7 @@ internal static class RapierWorld
         ///Player
         CollisionLayer.Player | CollisionLayer.Obstacle | CollisionLayer.PlayerAccessories,
         ///Obstacle
-        CollisionLayer.Player | CollisionLayer.Projectiles |  CollisionLayer.PlayerAccessories,
+        CollisionLayer.Player | CollisionLayer.Projectiles |  CollisionLayer.PlayerAccessories|  CollisionLayer.Obstacle,
         ///Projectiles
         CollisionLayer.Obstacle,
         ///PlayerAccessories
@@ -114,8 +116,8 @@ internal static class RapierWorld
 
     public static void DestroyBody(ulong handle)
         => DestroyBodyCommands.Enqueue(new DestroyBodyCommand(handle));
-    public static void AddForce(ulong handle, Vector2 linear, float angular)
-        => ApplyForceCommands.Enqueue(new ApplyForceCommand(handle,linear,angular));
+    ////public static void AddForce(ulong handle, Vector2 linear, float angular)
+    ////    => ApplyForceCommands.Enqueue(new ApplyForceCommand(handle,linear,angular));
 
 
     /* CALL FROM 1 SCRIPT ONLY WITH ONCREATE/ONDESTROY */
@@ -160,6 +162,7 @@ internal static class RapierWorld
           float linearDamp,
           float angularDamp,
           bool freezeRotation,
+          bool canSleep,
           bool enabled
       );
     [DllImport("rapier_unity")]
@@ -453,6 +456,7 @@ internal static class RapierWorld
 
         while (ApplyForceCommands.Count > 0)
         {
+            Debug.Log("deprecated for now, was causing desync because of reconciliation mitigating");
             ApplyForceCommands.Dequeue().Execute(world);
         }
         while (DestroyBodyCommands.Count > 0)
@@ -509,9 +513,9 @@ internal static class RapierWorld
             GameSyncManager.rapierToUnityDatabase.TryGet(CollisionEvents[i].EntityB, out var entityB);
 
             foreach (var l in entityA.col_listener)
-                l.OnRapierCollisionEnter(CollisionEvents[i].EntityB);
+                l.OnRapierCollisionEnter(CollisionEvents[i].EntityB, new Vector2(CollisionEvents[i].normalX, CollisionEvents[i].normalY));
             foreach (var l in entityB.col_listener)
-                l.OnRapierCollisionEnter(CollisionEvents[i].EntityA);
+                l.OnRapierCollisionEnter(CollisionEvents[i].EntityA, new Vector2(CollisionEvents[i].normalX, CollisionEvents[i].normalY));
 
         }
         for (int i = 0; i < trig_event_lenght; i++)

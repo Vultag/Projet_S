@@ -457,7 +457,9 @@ MonoBehaviour:
   AngularDampening: 0.05
   restitution: 0
   FreezeRotation: 0
+  canSleep: 1
   isEnabled: 0
+  cyclicSyncing: 0
 --- !u!114 &7982509429539077763
 MonoBehaviour:
   m_ObjectHideFlags: 0

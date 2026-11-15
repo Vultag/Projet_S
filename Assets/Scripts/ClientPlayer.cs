@@ -43,6 +43,14 @@ public class ClientPlayer : MonoBehaviour
         //if (playerNet.inputPayloadRBuffer.Read(0).action1 == Action.Push) Debug.Log("azeazeaze");
         /// !Curently reads the latest input from the buffer, skipping the previous ones and relying on reconciliation to recover them
         /// -> 
-        playerNet.Tick();
+        /// 
+        while (playerNet.anteriorConfigurationActionQueue.Count > 1)
+        {
+            InputPayload configurationAction = playerNet.anteriorConfigurationActionQueue.Dequeue();
+            playerNet.ProcessAnteriorConfigurationAction(configurationAction.action1, configurationAction.action1Delta);
+            playerNet.ProcessAnteriorConfigurationAction(configurationAction.action2, configurationAction.action2Delta);
+        }
+        playerNet.anteriorConfigurationActionQueue.Clear();
+        playerNet.Tick(0);
     }
 }

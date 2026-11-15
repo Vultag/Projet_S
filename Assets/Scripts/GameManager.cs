@@ -12,13 +12,27 @@ public class GameManager : MonoBehaviour
         GameSyncManager.gameManager = this;
     }
 
-    public void Tick()
+    public void Tick(short relativeTick)
     {
-
-        map.playerSpawner.Tick();
-
+        foreach (ISyncronizable syncronizable in map.Syncronized)
+        {
+            syncronizable.Tick(relativeTick);
+        }
 
     }
-
+    public void ROLLBACKsave()
+    {
+        foreach (ISyncronizable syncronizable in map.Syncronized)
+        {
+            syncronizable.ROLLBACKsave();
+        }
+    }
+    public void ROLLBACKrestore()
+    {
+        foreach (ISyncronizable syncronizable in map.Syncronized)
+        {
+            syncronizable.ROLLBACKrestore();
+        }
+    }
 
 }

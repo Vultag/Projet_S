@@ -4,7 +4,7 @@ using System.Globalization;
 using Unity.Mathematics;
 using UnityEngine;
 
-public class PlayerSpawner : MonoBehaviour
+public class PlayerSpawner : MonoBehaviour, ISyncronizable
 {
     [HideInInspector]
     public Map map;
@@ -37,7 +37,7 @@ public class PlayerSpawner : MonoBehaviour
     }
 
 
-    public void Tick()
+    public void Tick(short relativeTick)
     {
         uint respawnRowBitMaskUpdate = respawnRowBitMask;
         while (respawnRowBitMaskUpdate > 0)

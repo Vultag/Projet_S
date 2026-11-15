@@ -2,75 +2,85 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem.LowLevel;
 
-public class PlatformMovement : MonoBehaviour
+public class PlatformMovement : MonoBehaviour, ISyncronizable
 {
-    [SerializeField]
-    private float travelDurartion;
+    private Vector2 mouvStart;
     [SerializeField]
     private Vector2 mouvTarget;
-    private Vector2 mouvStart;
-    private Vector2[] positionArray;
-    private byte positionState;
-    private byte mouvState;
-    private float idleTime;
-    private byte isIdleTimeTicking = 0;
-    private Vector2 travelDelta;
     [SerializeField]
-    private float idleDuration;
-    [SerializeField]
-    private float startTimeOffset;
+    private ushort travelTickDuration;
+    [SerializeField, Range(0f, 0.75f)]
+    private float startupProgression;
 
-    Rigidbody2D body;
+    private Vector2 distanceDelta;
+
+    private bool backwardOrForward;
+    private bool backwardOrForwardROLLBACK;
+
+    RapierBody body;
 
     private void Start()
     {
-        body = this.GetComponent<Rigidbody2D>();
+        GameSyncManager.gameManager.map.Syncronized.Add(this);
+
+        body = this.GetComponent<RapierBody>();
         mouvStart = new Vector2(this.transform.position.x, this.transform.position.y);
-        /// global to local
-        mouvTarget = new Vector2(this.transform.parent.position.x, this.transform.parent.position.y) + mouvTarget;
 
-        Vector2 distance = (mouvTarget - mouvStart);
-        travelDelta = travelDurartion==0?Vector2.zero: distance /(travelDurartion);
+        /// local to world
+        mouvTarget = mouvStart + mouvTarget;
+        distanceDelta = ((mouvTarget - mouvStart) / (1f - startupProgression)) / (float)(travelTickDuration / 60f);
 
-        positionArray = new Vector2[2];
-        positionArray[0] = mouvStart;
-        positionArray[1] = mouvTarget;
+        RapierWorld.body_set_state(RapierWorld.world,body.entityHandle,
+            new BodyStateFFI
+            {
+                x = this.transform.position.x,
+                y = this.transform.position.y,
+                velocityX = distanceDelta.x,
+                velocityY = distanceDelta.y,
+                angularVelocity =0,
+                rotation = Mathf.Deg2Rad * transform.eulerAngles.z,
+            });
 
-        if (travelDurartion + idleDuration == 0)
-            enabled = false;
+        //travelDelta = travelDurartion==0?Vector2.zero: distance /(travelDurartion);
+
     }
 
-
-    private void FixedUpdate()
+    public void Tick(short relativeTick)
     {
-        idleTime += isIdleTimeTicking;
+        bool backOrForth = ((ServerManagerNet.tick + relativeTick + (travelTickDuration * startupProgression)) % (travelTickDuration * 2)) - travelTickDuration > 0;
 
-        //if ((Mathf.FloorToInt(GameManager.gameTime / (travelDurartion+ idleDuration)) & 1) == positionState)
-        //{
-        //    HaltServerRpc();
-        //    positionState = (byte)Mathf.Abs(positionState - 1);
-        //    isIdleTimeTicking = 1;
-        //    idleTime += isIdleTimeTicking;
-        //}
-        //else if ((Mathf.FloorToInt(idleTime / idleDuration) & 1) == 1)
-        //{
-        //    isIdleTimeTicking = 0;
-        //    idleTime = 0;
-        //    MoveServerRpc(mouvState);
-        //    mouvState = (byte)Mathf.Abs(mouvState - 1);
-        //}
+        if (backwardOrForward != backOrForth)
+        {
+            //if(!GameSyncManager.DEBUGreconciliating)Debug.Log("switch");
+
+            var newDirection = backOrForth ? -distanceDelta : distanceDelta;
+
+            var bodyState = RapierWorld.body_get_state(RapierWorld.world, body.entityHandle);
+            RapierWorld.body_set_state(RapierWorld.world, body.entityHandle,
+               new BodyStateFFI
+               {
+                   x = bodyState.x,
+                   y = bodyState.y,
+                   velocityX = newDirection.x,
+                   velocityY = newDirection.y,
+                   angularVelocity = bodyState.angularVelocity,
+                   rotation = bodyState.rotation,
+               });
+
+            backwardOrForward = backOrForth;
+            //startupProgression = 0;
+        }
+
+
     }
 
-    [ServerRpc]
-    private void HaltServerRpc()
+    public void ROLLBACKsave()
     {
-        body.linearVelocity = Vector2.zero;
-        body.position = positionArray[positionState];
+        backwardOrForwardROLLBACK = backwardOrForward;
     }
-    [ServerRpc]
-    private void MoveServerRpc(byte state)
+    public void ROLLBACKrestore()
     {
-        body.linearVelocity = -travelDelta * (state-0.5f)*2;
+        backwardOrForward = backwardOrForwardROLLBACK;
     }
 
 }

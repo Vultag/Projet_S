@@ -63,10 +63,18 @@ public class Propeller : MonoBehaviour, PowerUpInterface
         {
             flames.SetActive(true);
             player.mechanicalState.energy -= 0.25f;
-            RapierWorld.AddForce(player.PlayerBody.entityHandle, -dir.normalized * 50f, 0);
+            RapierWorld.body_add_force(
+               RapierWorld.world,
+               player.PlayerBody.entityHandle,
+               -dir.normalized.x * 50f * 3f,
+               -dir.normalized.y * 50f * 3f,
+               0
+           );
         }
         else
             flames.SetActive(false);
+
+        //Debug.Log(ServerManagerNet.tick + "  " + angle);
     }
 
 

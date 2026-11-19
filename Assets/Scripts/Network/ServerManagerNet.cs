@@ -206,7 +206,7 @@ public class ServerManagerNet : NetworkBehaviour
         if (newPlayer.IsLocalPlayer)
         {
             ServerManagerNet.tick = statePayload.tick;
-            Debug.Log(newPlayer.IsLocalPlayer);
+            //Debug.Log(newPlayer.IsLocalPlayer);
         }
         Debug.Log("spawn at  " + ServerManagerNet.tick);
 
@@ -399,6 +399,8 @@ public class ServerManagerNet : NetworkBehaviour
         }
         /// syncing
         {
+            GameSyncManager.syncingPhase = true;
+
             short RollbackTicksTillSync = (short)(syncedTick - latestServerStatePayloadTick);
             short relativeRollbackTicksTillSync = 0;
             while (syncedTick <= latestServerStatePayloadTick)
@@ -415,6 +417,7 @@ public class ServerManagerNet : NetworkBehaviour
                 RollbackTicksTillSync++;
                 syncedTick++;
             }
+            GameSyncManager.syncingPhase = false;
         }
 
         /// NEW LATEST WORLD SYNC
@@ -444,6 +447,7 @@ public class ServerManagerNet : NetworkBehaviour
 
         /// projection
         {
+            GameSyncManager.DEBUGprojection = true;
             while (rollbackTicksForProjection < 0)
             {
                 foreach (PlayerNet playerNet in GameSyncManager.Players)
@@ -456,10 +460,11 @@ public class ServerManagerNet : NetworkBehaviour
                 RapierWorld.PhysicsStep(PlayerNet.gameFixedDeltaTime);
                 rollbackTicksForProjection++;
             }
+            GameSyncManager.DEBUGprojection = false;
         }
     
 
-        GameSyncManager.rapierToUnityDatabase.TryGet(CyclicSyncObjectsHandle[GameSyncManager.CyclingRigidbodyStateIdx].entityHandle, out var teete);
+        //GameSyncManager.rapierToUnityDatabase.TryGet(CyclicSyncObjectsHandle[GameSyncManager.CyclingRigidbodyStateIdx].entityHandle, out var teete);
         //Debug.Log(ServerManagerNet.tick + "   " +  teete.GameObject.name);
 
         pendingServerData = false;

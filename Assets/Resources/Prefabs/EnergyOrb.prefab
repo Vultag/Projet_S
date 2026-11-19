@@ -152,7 +152,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RapierCircleShape
   colliderHandle: 0
-  layers: 1
+  layers: 256
   radius: 1
   friction: 0
   isSensor: 1
@@ -175,4 +175,5 @@ MonoBehaviour:
   AngularDampening: 0
   restitution: 0
   FreezeRotation: 0
+  canSleep: 1
   isEnabled: 1

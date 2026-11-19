@@ -67,6 +67,7 @@ public enum CollisionLayer
     TeamB = (1 << 5),
     TeamC = (1 << 6),
     TeamD = (1 << 7),
+    Item = (1 << 8),
 }
 internal static class RapierWorld
 {
@@ -74,13 +75,13 @@ internal static class RapierWorld
     private static readonly CollisionLayer[] CollisionMasks = new CollisionLayer[32]
     {
         ///Player
-        CollisionLayer.Player | CollisionLayer.Obstacle | CollisionLayer.PlayerAccessories,
+        CollisionLayer.Player | CollisionLayer.Obstacle | CollisionLayer.PlayerAccessories | CollisionLayer.Item,
         ///Obstacle
         CollisionLayer.Player | CollisionLayer.Projectiles |  CollisionLayer.PlayerAccessories|  CollisionLayer.Obstacle,
         ///Projectiles
         CollisionLayer.Obstacle,
         ///PlayerAccessories
-        CollisionLayer.Player | CollisionLayer.Obstacle,
+        CollisionLayer.Player | CollisionLayer.Obstacle| CollisionLayer.Item,
         ///TeamA
         CollisionLayer.TeamB | CollisionLayer.TeamC | CollisionLayer.TeamD,
         ///TeamB
@@ -89,7 +90,9 @@ internal static class RapierWorld
         CollisionLayer.TeamA | CollisionLayer.TeamB | CollisionLayer.TeamD,
         ///TeamD
         CollisionLayer.TeamA | CollisionLayer.TeamB | CollisionLayer.TeamC,
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+        ///Item
+        CollisionLayer.Player|  CollisionLayer.PlayerAccessories,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     };
 
     static public IntPtr world;
@@ -411,6 +414,21 @@ internal static class RapierWorld
         ulong colliderHandle,
         uint membership
     );
+    [DllImport("rapier_unity")]
+    public static extern void wake_up_body(
+          IntPtr world,
+          ulong handle
+      );
+
+    //[DllImport("rapier_unity")]
+    //public static extern void temp(
+    //    IntPtr world,
+    //    ulong jointHandle,
+    //    out bool body1sleep,
+    //    out bool body2sleep,
+    //    out float impulse
+    //);
+
 
 
     public static void Create_world()

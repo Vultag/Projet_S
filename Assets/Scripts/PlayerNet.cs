@@ -559,8 +559,11 @@ public class PlayerNet : NetworkBehaviour, IDamageable
             powerUps[i].Tick(((mechanicalState.PowerUpsStates>>i)&1) ==1);
         }
 
-        ProcessAction(payload.action1, payload.action1Delta);
-        ProcessAction(payload.action2, payload.action2Delta);
+        if(health >0)
+        {
+            ProcessAction(payload.action1, payload.action1Delta);
+            ProcessAction(payload.action2, payload.action2Delta);
+        }
 
         mechanicalState.revertCooldown = (byte)(mechanicalState.revertCooldown - mechanicalState.activeRevertCooldown);
         mechanicalState.ticksTillPistonPushActivation = (byte)(mechanicalState.ticksTillPistonPushActivation - mechanicalState.pistonPushArmed);
@@ -758,11 +761,19 @@ public class PlayerNet : NetworkBehaviour, IDamageable
     public void Die()
     {
 
-        //Debug.Log("die");
+        /// Projection
+        if(!GameSyncManager.syncingPhase && !IsServer)
+        {
+            return;
+        }
+
+
         if (IsOwner)
             player.ui.RespawnSwitch(false);
         else if(IsClient)
-            clientPlayer.gameObject.SetActive(false);
+        {
+
+        }
 
         if (mechanicalState.selectedPowerUpIdx >= 0)
         {
@@ -781,7 +792,7 @@ public class PlayerNet : NetworkBehaviour, IDamageable
 
         RapierWorld.joint_set_enabled(RapierWorld.world, Pistonjoint.handle, false);
         RapierWorld.joint_set_enabled(RapierWorld.world, Cogjoint.handle, false);
-        RapierWorld.body_set_enabled(RapierWorld.world,PistonBody.entityHandle,false);
+        RapierWorld.body_set_enabled(RapierWorld.world, PistonBody.entityHandle, false);
         RapierWorld.body_set_enabled(RapierWorld.world, PlayerBody.entityHandle, false);
         RapierWorld.body_set_enabled(RapierWorld.world, CogBody.entityHandle, false);
         PistonBody.gameObject.SetActive(false);
@@ -792,6 +803,8 @@ public class PlayerNet : NetworkBehaviour, IDamageable
 
     public void Spawn(Vector3 pos,Vector2 force)
     {
+        //Debug.Log("spawn");
+
         BodyStateFFI spawnState = new BodyStateFFI
         {
             x = pos.x,
@@ -830,7 +843,7 @@ public class PlayerNet : NetworkBehaviour, IDamageable
         health -= damage;
         //Debug.Log(health);
         if (health <= 0)
-            Die();
+                Die();
     }
 
     public void AmmoPickUp()

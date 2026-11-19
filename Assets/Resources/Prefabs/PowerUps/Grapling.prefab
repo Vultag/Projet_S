@@ -435,8 +435,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Hook
   playerBody: {fileID: 0}
+  distanceJointHandle: 0
   hookShoot: 0
+  hooked: 0
   body: {fileID: 0}
+  shape: {fileID: 0}
   hookRope: {fileID: 2558349597922329689}
 --- !u!114 &8018739003896365139
 MonoBehaviour:
@@ -457,9 +460,8 @@ MonoBehaviour:
   AngularDampening: 0.05
   restitution: 0
   FreezeRotation: 0
-  canSleep: 1
+  canSleep: 0
   isEnabled: 0
-  cyclicSyncing: 0
 --- !u!114 &7982509429539077763
 MonoBehaviour:
   m_ObjectHideFlags: 0

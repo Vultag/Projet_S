@@ -24,6 +24,8 @@ public static class GameSyncManager
 
 
     public static bool DEBUGreconciliating = false;
+    public static bool syncingPhase = false;
+    public static bool DEBUGprojection = false;
 
     static GameSyncManager()
     {
@@ -43,7 +45,6 @@ public static class GameSyncManager
 
         //if(GameSyncManager.Players.Count == 2)
         //    Debug.LogError("save");
-        RapierWorld.world_store_snapshot(RapierWorld.world);
 
         bulletPool.SaveState();
         gameManager.ROLLBACKsave();
@@ -63,6 +64,7 @@ public static class GameSyncManager
             player.UpdateSyncedStates();
             ///player.latestSyncedMechanicsStatePayload = player.mechanicalState;
         }
+        RapierWorld.world_store_snapshot(RapierWorld.world);
     }
 
     public static void GameSyncRestore()

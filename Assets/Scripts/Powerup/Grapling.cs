@@ -26,13 +26,13 @@ public class Grapling : MonoBehaviour, PowerUpInterface
     //    hook.Shoot(dir);
     //}
 
-    public void Detatch()
-    {
-        if (hook.hookShoot)
-        {
-            hook.Disable();
-        }
-    }
+    //public void Detatch()
+    //{
+    //    if (hook.hookShoot)
+    //    {
+    //        hook.Disable();
+    //    }
+    //}
 
 
     public void RestorePowerUpState(bool OnOrOff)
@@ -65,7 +65,7 @@ public class Grapling : MonoBehaviour, PowerUpInterface
 
     public void PowerUpDisable()
     {
-        Detatch();
+        hook.Disable();
         gameObject.SetActive(false);
     }
 
@@ -90,7 +90,7 @@ public class Grapling : MonoBehaviour, PowerUpInterface
     /// DETATCH
     public void PowerUpAction2(Vector2 delta)
     {
-        Detatch();
+        hook.Disable();
         player.mechanicalState.PowerUpsStates = (byte)(player.mechanicalState.PowerUpsStates & ~(1 << (byte)delta.x));
         player.syncedUIstatesBitmask &= ~(1u << (int)(delta.x+8));
     }

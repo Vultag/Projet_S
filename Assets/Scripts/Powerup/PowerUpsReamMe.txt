@@ -23,6 +23,7 @@
 			- Metamaterial coating (invisibility)
 			- EMP launcher (grenade launcher that disable movement/abilities)
 			- Smoke emitter
+			- Force field (zeros velocities of entering projectiles)
 			- ...
 		
 
@@ -82,6 +83,8 @@
 				Rifle:
 					-> bouning projectile
 					-> hitscan with red dot
+				GrenadeLauncher:
+					-> Grenades dont explodes but persiste longer and deal damage on contact
 				...
 			
 

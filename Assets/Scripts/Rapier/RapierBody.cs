@@ -56,7 +56,6 @@ public class RapierBody : MonoBehaviour
         var col_listeners = GetComponents<IRapierCollisionListener>();
         var trig_listeners = GetComponents<IRapierTriggerListener>();
 
-
         GameSyncManager.rapierToUnityDatabase.Add(entityHandle, new EntityData
         {
             GameObject = gameObject,

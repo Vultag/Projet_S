@@ -1,24 +1,36 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 
-public class Bullet : MonoBehaviour, IRapierTriggerListener
+public class Bullet : MonoBehaviour, IRapierTriggerListener,IPoolable
 {
     [HideInInspector]
     public ulong bodyHandle;
     [HideInInspector]
     public ulong colliderHandle;
+
+    private bool active;
+    private bool activeROLLBACK;
+
+    private bool hit;
+    private bool hitROLLBACK;
+
     [HideInInspector]
-    public BulletPool pool;
+    public Pool pool { get; set; }
 
     private void Start()
     {
         bodyHandle = this.GetComponent<RapierBody>().entityHandle;
         colliderHandle = this.GetComponent<RapierCircleShape>().colliderHandle;
+        gameObject.SetActive(false);
     }
 
     public void Shoot(float posX, float posY, Vector2 direction, float speed, CollisionLayer team)
     {
+        //Debug.Log("enable");
+        active = true;
+        hit = false;
         RapierWorld.body_set_enabled(RapierWorld.world, bodyHandle, true);
+        RapierWorld.shape_set_enabled(RapierWorld.world, colliderHandle, true);
         RapierWorld.collider_set_memberships(
                 RapierWorld.world,
                 colliderHandle,
@@ -34,10 +46,13 @@ public class Bullet : MonoBehaviour, IRapierTriggerListener
                 angularVelocity = 0
             }
             );
+
+
     }
 
     public void OnRapierTriggerEnter(GameObject EntityEntering, ulong EntityEnteringID)
     {
+        if (hit) return;
 
         if (GameSyncManager.damageableDatabase.TryGet(EntityEnteringID, out IDamageable damageable))
         {
@@ -47,13 +62,35 @@ public class Bullet : MonoBehaviour, IRapierTriggerListener
         {
             //Debug.Log("no damageable on " + EntityEntering.gameObject.name);
         }
-
+        //Debug.Log("         disable");
         RapierWorld.body_set_enabled(RapierWorld.world, bodyHandle, false);
-        transform.position = new Vector3(1000, 1000, 0);
+        RapierWorld.shape_set_enabled(RapierWorld.world, colliderHandle, false);
+        active = false;
+        hit = true;
         pool.Return(this);
     }
 
     public void OnRapierTriggerExit(GameObject EntityExiting, ulong EntityExitingID)
+    {
+
+    }
+
+
+    public void PoolableStateSave()
+    {
+        activeROLLBACK = active;
+        hitROLLBACK = hit;
+    }
+
+    public void PoolableStateRestore()
+    {
+        //Debug.Log(activeROLLBACK + gameObject.GetInstanceID().ToString());
+        gameObject.SetActive(activeROLLBACK);
+        active = activeROLLBACK;
+        hit = hitROLLBACK;
+    }
+
+    public void PoolableTick()
     {
 
     }

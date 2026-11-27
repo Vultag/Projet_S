@@ -28,7 +28,7 @@ Transform:
   m_GameObject: {fileID: 2447478897868321668}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 1000, y: 1000, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -48,7 +48,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bullet
   bodyHandle: 0
-  pool: {fileID: 0}
+  colliderHandle: 0
 --- !u!114 &4660982093897830790
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -68,6 +68,7 @@ MonoBehaviour:
   AngularDampening: 0
   restitution: 0
   FreezeRotation: 0
+  canSleep: 1
   isEnabled: 0
 --- !u!114 &628125372108002704
 MonoBehaviour:
@@ -81,7 +82,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f26e7382915fd9e4a90f3a2395cabcb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RapierCircleShape
-  entityHandle: 0
+  colliderHandle: 0
+  layers: 0
   radius: 0.3
   friction: 0
   isSensor: 1

@@ -10,7 +10,7 @@ public interface PowerUpInterface
     //void PowerUpSelect();
     //void PowerUpDeselect();
     void PowerUpSelection(bool SelectOrDeselect);
-    void PowerUpEnable();
+    //void PowerUpEnable();
     void PowerUpDisable();
 
 

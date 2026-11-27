@@ -51,8 +51,7 @@ public class Player : MonoBehaviour
     private Vector2 rightJumpForceArmed;
     private Vector2 leftJumpForceArmed;
 
-    [HideInInspector]
-    public InputPayload activeInputPayload;
+    private InputPayload activeInputPayload;
     [HideInInspector]
     public byte actionNumThisFrame;
     [HideInInspector]
@@ -121,6 +120,8 @@ public class Player : MonoBehaviour
 
         playerNet.ProcessInputPayload(activeInputPayload);
 
+
+
         GameSyncManager.DEBUGreconciliating = true;
         serverManagerNet.Reconciliation();
         GameSyncManager.DEBUGreconciliating = false;
@@ -130,8 +131,11 @@ public class Player : MonoBehaviour
             Debug.LogWarning("more tow action this frame");
         }
 
-
-        playerNet.Tick(0);
+        foreach (var player in GameSyncManager.Players)
+        {
+            player.Tick(player.tickDelay);
+            player.tickDelay = (short)Mathf.Min(player.tickDelay+1,0);
+        }
 
         GameSyncManager.gameManager.Tick(0);
 
@@ -187,6 +191,9 @@ public class Player : MonoBehaviour
             case 1:
                 activeInputPayload.action2 = action;
                 activeInputPayload.action2Delta = delta;
+                break;
+            default:
+                Debug.LogWarning("actionNumThisFrame > 2");
                 break;
         }
         actionNumThisFrame++;

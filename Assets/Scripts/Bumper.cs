@@ -36,6 +36,16 @@ public class Bumper : MonoBehaviour,IRapierCollisionListener
 
             //Debug.Log(normal + "   " + RapierWorld.body_get_state(RapierWorld.world, this.GetComponent<RapierBody>().entityHandle).rotation + "   " + handleBodyEntering + "   " + ServerManagerNet.tick);
         }
+        else
+        {
+            RapierWorld.body_add_force(
+                 RapierWorld.world,
+                 handleBodyEntering,
+                 normal.x * 100 * bumperStrenght,
+                 normal.y * 100 * bumperStrenght,
+                 0
+            );
+        }
     }
 
     public void OnRapierCollisionExit(ulong HandleColiderExiting, Vector2 normal)

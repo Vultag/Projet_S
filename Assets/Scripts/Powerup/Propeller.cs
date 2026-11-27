@@ -24,7 +24,7 @@ public class Propeller : MonoBehaviour, PowerUpInterface
 
     public void RestorePowerUpState(bool OnOrOff)
     {
-
+        flames.SetActive(OnOrOff);
     }
 
     public void SavePowerUpState()
@@ -45,14 +45,10 @@ public class Propeller : MonoBehaviour, PowerUpInterface
     //    gameObject.SetActive(false);
     //}
 
-    public void PowerUpEnable()
-    {
-
-    }
 
     public void PowerUpDisable()
     {
-
+        flames.SetActive(false);
     }
 
     public void PowerUpAim(Vector2 dir)
@@ -80,10 +76,12 @@ public class Propeller : MonoBehaviour, PowerUpInterface
 
     public void PowerUpAction1(Vector2 delta)
     {
+        player.mechanicalState.PowerUpsStates = (byte)(player.mechanicalState.PowerUpsStates | (1 << player.mechanicalState.selectedPowerUpIdx));
     }
 
     public void PowerUpAction2(Vector2 delta)
     {
+        player.mechanicalState.PowerUpsStates = (byte)(player.mechanicalState.PowerUpsStates & ~(1 << player.mechanicalState.selectedPowerUpIdx));
         flames.SetActive(false);
     }
 

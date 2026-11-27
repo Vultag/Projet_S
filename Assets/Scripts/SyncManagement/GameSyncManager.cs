@@ -19,7 +19,7 @@ public static class GameSyncManager
     public static RapierToUnityDatabase rapierToUnityDatabase { get; private set; }
     public static IDamageableDatabase damageableDatabase { get; private set; }
 
-    public static BulletPool bulletPool;
+    public static PoolManager poolManager;
 
 
 
@@ -44,9 +44,9 @@ public static class GameSyncManager
     {
 
         //if(GameSyncManager.Players.Count == 2)
-        //    Debug.LogError("save");
+            //Debug.Log("save");
 
-        bulletPool.SaveState();
+        poolManager.SavePoolsState();
         gameManager.ROLLBACKsave();
 
         if (!rapierToUnityDatabase.IsDatabaseSynced())
@@ -61,7 +61,7 @@ public static class GameSyncManager
 
         foreach (PlayerNet player in GameSyncManager.Players)
         {
-            player.UpdateSyncedStates();
+            player.SaveSyncedStates();
             ///player.latestSyncedMechanicsStatePayload = player.mechanicalState;
         }
         RapierWorld.world_store_snapshot(RapierWorld.world);
@@ -72,7 +72,7 @@ public static class GameSyncManager
         //Debug.LogError("restore");
         RapierWorld.world_restore_snapshot(RapierWorld.world);
 
-        bulletPool.RestoreState();
+        poolManager.RestorePoolsState();
         gameManager.ROLLBACKrestore();
 
         if (!rapierToUnityDatabase.IsDatabaseSynced())
@@ -89,7 +89,7 @@ public static class GameSyncManager
         foreach (PlayerNet player in Players)
         {
             player.RestoreState(player.latestSyncedMechanicsStatePayload);
-            player.anteriorConfigurationActionQueue.Clear();
+            //player.anteriorConfigurationActionQueue.Clear();
         }
     }
 

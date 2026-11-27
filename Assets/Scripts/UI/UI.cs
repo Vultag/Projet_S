@@ -15,7 +15,9 @@ public enum PowerUp
     GraplinHook,
     Propeller,
     AutoTurret,
-    Rifle
+    Rifle,
+    GrenadeLauncher,
+    StickyFoam
 }
 
 public class UI : MonoBehaviour
@@ -235,6 +237,33 @@ public class UI : MonoBehaviour
                     RifleUIPrefab = null;
 
                     break;
+                case PowerUp.GrenadeLauncher:
+
+                    GameObject GNLUIPrefab = Resources.Load<GameObject>("Prefabs/PowerUpsUI/GrenadeLauncherUIButton");
+                    GameObject GNLUIInstance = Instantiate(GNLUIPrefab, powerUpsUISlot[i].transform);
+                    GNLUIInstance.GetComponent<Image>().color = Color.lightGray;
+                    int GNLIdx = i;
+                    uiEquipments[i] = GNLUIInstance.GetComponent<UiEquipment>();
+                    GNLUIInstance.GetComponent<Button>().onClick.AddListener(() => SelectPowerUp(GNLIdx));
+
+                    GNLUIPrefab = null;
+
+                    break;
+                case PowerUp.StickyFoam:
+
+                    GameObject StickyFoamUIPrefab = Resources.Load<GameObject>("Prefabs/PowerUpsUI/StickyFoamUIButton");
+                    GameObject StickyFoamUIInstance = Instantiate(StickyFoamUIPrefab, powerUpsUISlot[i].transform);
+                    StickyFoamUIInstance.GetComponent<Image>().color = Color.blue;
+                    int StickyFoamIdx = i;
+                    uiEquipments[i] = StickyFoamUIInstance.GetComponent<UiEquipment>();
+                    StickyFoamUIInstance.GetComponent<Button>().onClick.AddListener(() => ChangePassivePowerUp(StickyFoamIdx));
+
+                    var StickyFoamActiveUiLink = playerNet.powerUpsGB[i].gameObject.AddComponent<PowerUpUiLink>();
+                    StickyFoamActiveUiLink.UIobject = StickyFoamUIInstance.transform.GetChild(0).gameObject;
+
+                    StickyFoamUIPrefab = null;
+
+                    break;
             }
         }
         CancelPowerUpUIPrefab = null;
@@ -248,11 +277,6 @@ public class UI : MonoBehaviour
     {
         if (aimAction)
         {
-            //switch (playerNet.ac)
-            //{
-            //    default:
-            //        break;
-            //}
             Vector2 aimTarget = Camera.main.ScreenToWorldPoint(activeFinger == 1 ? finger1Pos.ReadValue<Vector2>() : finger2Pos.ReadValue<Vector2>()) - player.PlayerBody.transform.position;
             player.RegisterAction(Action.Aim, aimTarget);
         }
@@ -308,6 +332,10 @@ public class UI : MonoBehaviour
                     aimAction = true;
                     player.RegisterAction(Action.PowerUpAction1, Camera.main.ScreenToWorldPoint(pos) - player.PlayerBody.transform.position);
                     break;
+                case PowerUp.GrenadeLauncher:
+                    aimAction = true;
+                    player.RegisterAction(Action.PowerUpAction1, Camera.main.ScreenToWorldPoint(pos) - player.PlayerBody.transform.position);
+                    break;
             }
         }
     }
@@ -333,6 +361,9 @@ public class UI : MonoBehaviour
                     player.RegisterAction(Action.PowerUpAction2, Vector2.zero);
                     break;
                 case PowerUp.Rifle:
+                    player.RegisterAction(Action.PowerUpAction2, Vector2.zero);
+                    break;
+                case PowerUp.GrenadeLauncher:
                     player.RegisterAction(Action.PowerUpAction2, Vector2.zero);
                     break;
             }

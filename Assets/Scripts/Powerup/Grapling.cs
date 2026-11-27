@@ -58,10 +58,6 @@ public class Grapling : MonoBehaviour, PowerUpInterface
     //    gameObject.SetActive(false);
     //}
 
-    public void PowerUpEnable()
-    {
-
-    }
 
     public void PowerUpDisable()
     {

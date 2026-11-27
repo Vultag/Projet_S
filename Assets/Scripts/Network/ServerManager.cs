@@ -116,19 +116,17 @@ public class ServerManager : MonoBehaviour
         /// DATA DISPATCHING
         {
             {
-                byte i = 0;
-                foreach (PlayerNet playerNet in GameSyncManager.Players)
+                for (int i = 0; i < GameSyncManager.Players.Count; i++)
                 {
                     statePayloads[i] = new StatePayload
                     {
-                        tick = ServerManagerNet.tick-1,
-                        playerPhyState = RapierWorld.body_get_state(RapierWorld.world, playerNet.PlayerBody.entityHandle),
-                        pistonPhyState = RapierWorld.body_get_state(RapierWorld.world, playerNet.PistonBody.entityHandle),
-                        cogPhyState = RapierWorld.body_get_state(RapierWorld.world, playerNet.CogBody.entityHandle),
-                        playerMechanicsState = playerNet.mechanicalState
+                        tick = ServerManagerNet.tick - 1,
+                        playerPhyState = RapierWorld.body_get_state(RapierWorld.world, GameSyncManager.Players[i].PlayerBody.entityHandle),
+                        pistonPhyState = RapierWorld.body_get_state(RapierWorld.world, GameSyncManager.Players[i].PistonBody.entityHandle),
+                        cogPhyState = RapierWorld.body_get_state(RapierWorld.world, GameSyncManager.Players[i].CogBody.entityHandle),
+                        playerMechanicsState = GameSyncManager.Players[i].mechanicalState
                     };
-                    if (playerNet.mechanicalState.ticksTillPistonPushActivation == 0) Debug.Log("44454");
-                    i++;
+                    if (GameSyncManager.Players[i].mechanicalState.ticksTillPistonPushActivation == 0) Debug.Log("44454");
                 }
             }
 

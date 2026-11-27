@@ -10,8 +10,9 @@ public class AutoTurret : MonoBehaviour,PowerUpInterface
     public int equipmentIdx;
     [HideInInspector]
     public CollisionLayer team;
-    //[HideInInspector]
-    //public BulletPool bulletPool;
+
+    [HideInInspector]
+    public Pool bulletPool;
 
     Vector2 latestEnemyDirection;
     const float shootCooldownTime = 0.5f;
@@ -40,10 +41,6 @@ public class AutoTurret : MonoBehaviour,PowerUpInterface
         this.gameObject.SetActive(false);
     }
 
-    public void PowerUpEnable()
-    {
-
-    }
 
     public void PowerUpSelection(bool SelectOrDeselect)
     {
@@ -102,7 +99,7 @@ public class AutoTurret : MonoBehaviour,PowerUpInterface
 
                 //var entityB = RapierToUnityDatabase.Get(closestPlayerhandle);
                 //RapierWorld.unityToRapierEntityMap.TryGetValue(closestPlayerhandle, out var entityB);
-                Bullet bullet = GameSyncManager.bulletPool.Pull();
+                Bullet bullet = (Bullet)bulletPool.Pull();
                 if (bullet == null) return;
                 bullet.Shoot(playerBodyState.x, playerBodyState.y, latestEnemyDirection.normalized, 10f, team);
                 shootCooldown = shootCooldownTime;

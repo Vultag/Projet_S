@@ -6,19 +6,19 @@ using UnityEngine;
 public class ClientPlayer : MonoBehaviour
 {
 
-    private PlayerNet playerNet;
+    //private PlayerNet playerNet;
     //private uint tick;
 
-    public SpriteRenderer playerIcon;
+    //public SpriteRenderer playerIcon;
 
-    public SliderJoint2D Pistonjoint;
-    public Rigidbody2D PlayerBody;
+    //public SliderJoint2D Pistonjoint;
+    //public Rigidbody2D PlayerBody;
 
     private uint latestActionedInputTick;
 
     void Start()
     {
-        playerNet = GetComponent<PlayerNet>();
+        //playerNet = GetComponent<PlayerNet>();
 
         //playerNet.statePayloadRBuffer = new RingBuffer<StatePayload>(PlayerNet.PayloadRBufferSize);
 
@@ -44,13 +44,14 @@ public class ClientPlayer : MonoBehaviour
         /// !Curently reads the latest input from the buffer, skipping the previous ones and relying on reconciliation to recover them
         /// -> 
         /// 
-        while (playerNet.anteriorConfigurationActionQueue.Count > 1)
-        {
-            InputPayload configurationAction = playerNet.anteriorConfigurationActionQueue.Dequeue();
-            playerNet.ProcessAnteriorConfigurationAction(configurationAction.action1, configurationAction.action1Delta);
-            playerNet.ProcessAnteriorConfigurationAction(configurationAction.action2, configurationAction.action2Delta);
-        }
-        playerNet.anteriorConfigurationActionQueue.Clear();
-        playerNet.Tick(0);
+        //while (playerNet.anteriorConfigurationActionQueue.Count > 1)
+        //{
+        //    InputPayload configurationAction = playerNet.anteriorConfigurationActionQueue.Dequeue();
+        //    playerNet.ProcessAnteriorConfigurationAction(configurationAction.action1, configurationAction.action1Delta);
+        //    playerNet.ProcessAnteriorConfigurationAction(configurationAction.action2, configurationAction.action2Delta);
+        //}
+        //playerNet.anteriorConfigurationActionQueue.Clear();
+        //playerNet.Tick(playerNet.tickDelay);
+        //playerNet.tickDelay = (short)Mathf.Min(playerNet.tickDelay+1,0);
     }
 }

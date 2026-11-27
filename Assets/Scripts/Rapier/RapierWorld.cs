@@ -99,6 +99,8 @@ internal static class RapierWorld
 
     public static readonly uint[] LayerFilters = new uint[32];
 
+    public static ulong[] handleQueryCollector = new ulong[32];
+
     //static public RapierToUnityDatabase unityToRapierEntityMap = new();
     //static private Dictionary<ulong, EntityData> unityToRapierEntityMapROLLBACK = new(512);
     //static private int unityToRapierEntityMapVersion = 0;
@@ -409,6 +411,17 @@ internal static class RapierWorld
         uint filter
     );
     [DllImport("rapier_unity")]
+    public static extern int get_overlap_bodies(
+        IntPtr world,
+        float x,
+        float y,
+        float radius,
+        uint memberships,
+        uint filter,
+        ulong[] handleCollector,
+        UIntPtr capacity
+    );
+    [DllImport("rapier_unity")]
     public static extern void collider_set_memberships(
         IntPtr worldPtr,
         ulong colliderHandle,
@@ -540,6 +553,7 @@ internal static class RapierWorld
         {
             GameSyncManager.rapierToUnityDatabase.TryGet(TiggerEvents[i].EntityA, out var entityA);
             GameSyncManager.rapierToUnityDatabase.TryGet(TiggerEvents[i].EntityB, out var entityB);
+
 
             foreach (var l in entityA.trig_listener)
             {

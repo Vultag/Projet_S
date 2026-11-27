@@ -11,7 +11,10 @@ public class Rifle : MonoBehaviour, PowerUpInterface
     [HideInInspector]
     public CollisionLayer team;
 
-    const float shootCooldownTime = 0.9f;
+    [HideInInspector]
+    public Pool bulletPool;
+
+    const float shootCooldownTime = 0.3f;
     float shootCooldown = shootCooldownTime;
     float rollbackShootCooldown = shootCooldownTime;
 
@@ -22,7 +25,7 @@ public class Rifle : MonoBehaviour, PowerUpInterface
         if (shootCooldown <= 0 & player.weaponsAmmo[equipmentIdx]>0)
         {
             var playerBodyState = RapierWorld.body_get_state(RapierWorld.world, player.PlayerBody.entityHandle);
-            Bullet bullet = GameSyncManager.bulletPool.Pull();
+            Bullet bullet = (Bullet)bulletPool.Pull();
             if (bullet == null) return;
             bullet.Shoot(playerBodyState.x, playerBodyState.y, delta.normalized, 32f, team);
             shootCooldown = shootCooldownTime;
@@ -50,10 +53,6 @@ public class Rifle : MonoBehaviour, PowerUpInterface
     {
     }
 
-    public void PowerUpEnable()
-    {
-        throw new System.NotImplementedException();
-    }
 
     public void PowerUpSelection(bool SelectOrDeselect)
     {

@@ -61,6 +61,8 @@ public class ConfigureNetwork : MonoBehaviour
              "0.0.0.0"
          );
 
+        GameSyncManager.IsServer = true;
+
         bool result = NetworkManager.Singleton.StartServer();
 
 
